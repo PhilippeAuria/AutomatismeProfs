@@ -1,0 +1,422 @@
+% Préambule APMEP - Annales
+% Auteurs
+% tapuscrit : François Kriegk
+% relecture :
+% figures TikZ : François Kriegk
+% figures pstricks : Denis Vergès
+% modifications :
+% Remerciements :
+% version 1 : 2026-07-05
+%
+\documentclass[12pt,a4paper,french]{article}
+
+% Packages
+%%% codage et police utilisée
+\usepackage[T1]{fontenc}
+\RequirePackage{iftex}
+\iftutex % moteur utf-8 lualatex, xelatex
+	\usepackage{fourier-otf} % remplace fourier pour moteur utf8 (LuaLaTeX, XeLaTeX)
+	% Alternatives nécéssite (LuaLaTeX, XeLaTeX)
+    \usepackage{hyperref}
+	%\usepackage{fontspec}% pour utiliser des fontes système
+\else % pour les autres moteurs latex, pdflatex
+	\usepackage[utf8]{inputenc}
+	\usepackage{fourier}
+	\usepackage{amsmath,amssymb}
+    \usepackage[dvips]{hyperref}
+    \renewcommand{\ttdefault}{lmtt}
+\fi
+\usepackage[normalem]{ulem}
+\usepackage{pifont}
+\usepackage{lscape}
+% tableaux
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{tabularray}
+% texte et composition
+\usepackage{textcomp}
+\usepackage{babel}
+\usepackage[np]{numprint}
+%
+\usepackage{fancyhdr}
+\usepackage{makeidx}
+\makeindex
+% pour le symbole €
+\usepackage{eurosym}
+\DeclareRobustCommand{\officialeuro}{%
+  \ifmmode\expandafter\text\fi
+  {\fontencoding{U}\fontfamily{eurosym}\selectfont e}}
+\AtBeginDocument{\renewcommand{\euro}{\officialeuro}}
+% couleurs étendues
+\usepackage{xcolor}
+% pour les listes
+\usepackage{enumitem}
+% Enumérations réglage par défaut
+\setlist[itemize]{label=\textbullet,leftmargin=5mm,labelwidth=3mm,labelsep=2mm,align=left}
+\setlist[enumerate]{labelindent=0pt, leftmargin=5mm, labelsep=2mm, labelwidth=3mm,labelsep=2mm, align= left}
+\setlist[enumerate,1]{label = \textbf{\arabic*.}}
+\setlist[enumerate,2]{label = \textbf{\alph*.}}
+\setlist[enumerate,3]{label = \textbf{\roman*.}}
+% pour l'ajustement des boites (figures…)
+\usepackage{adjustbox}
+% pour ne pas commencer un exercice en fin de page
+\usepackage{needspace}
+%
+% Taille de la zone d'écriture
+\usepackage[left=1.5cm,right=1.5cm,top=3cm,bottom=3cm]{geometry}
+\setlength{\headheight}{15pt}
+\setlength{\parindent}{0mm}
+%
+% Formatage du pdf
+\hypersetup{%
+    pdfauthor = {APMEP},
+    pdfsubject = {Troisième, Série générale},
+    pdftitle = {Brevet des collèges    -- Session 2026},
+    allbordercolors = white,
+    pdfstartview=FitH
+}
+% Pour scratch (code)
+\usepackage{scratch3}
+% Pour le code Python
+\usepackage{listings}
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{orange},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  tabsize=4
+}
+  % usage (exemple)
+  %\begin{lstlisting}[style=python]
+%def seuil():
+%    n = 1
+%    p = 0.5
+%    while p < 0.6 :
+%       n = n + 1
+%       p = p*7/15 + 1/3
+%    return n
+%\end{lstlisting}
+
+
+% Pour une visualisation de type tableur
+\usepackage{pas-tableur}
+%
+%% pour PsTricks
+\usepackage{pst-bezier}%% AVANT les autres PST
+\usepackage{pstricks-add}
+\usepackage{pst-func,pst-tree,pst-circ}
+\usepackage{pst-eucl}
+%% pour TikZ
+\usepackage{tikz,pgfplots,pgf,tkz-tab,tikzpagenodes}
+\usetikzlibrary{calc,patterns,decorations,arrows.meta,patterns.meta,arrows}
+\pgfplotsset{compat=1.18,/pgf/number format/.cd,use comma}
+\usepackage{icomma} % gestion des espaces autour des virgules
+\DeclareMathSymbol{;}{\mathbin}{operators}{"3B}% pour un espacement correct du ; en mode maths
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Définitions
+%
+% notation en mode mathématique et hors mode mathématique
+\newcommand{\R}{\ensuremath{\mathbb{R}}}
+\newcommand{\N}{\ensuremath{\mathbb{N}}}
+\newcommand{\D}{\ensuremath{\mathbb{D}}}
+\newcommand{\Z}{\ensuremath{\mathbb{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbb{Q}}}
+\newcommand{\C}{\ensuremath{\mathbb{C}}}
+%
+\providecommand{\up}{\textsuperscript}
+%
+\newcommand{\vect}[1]{\overrightarrow{\,\mathstrut#1\,}}
+\newcommand{\vectt}[1]{\overrightarrow{\,\mathstrut\text{#1}\,}}
+%
+\def\Oij{$\left(\text{O};\vect{\imath},\vect{\jmath}\right)$}
+\def\Oijk{$\left(\text{O};\vect{\imath},\vect{\jmath},\vect{k}\right)$}
+\def\Ouv{$\left(\text{O};\vect{u},\vect{v}\right)$}
+%
+\newcommand{\ds}{\displaystyle}
+%
+\renewcommand{\d}{\mathrm{\,d}}
+\renewcommand{\i}{\mathrm{\,i\,}}
+\newcommand{\e}{\mathrm{\,e\,}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%---------------------------------------------------------
+% Réglage entête, pied de page
+%---------------------------------------------------------
+\rhead{\textbf{A. P{}. M. E. P{}.}}
+\lhead{\small Corrigé}
+\lfoot{\small{Polynésie}}
+\rfoot{\small{26 juin 2026}}
+\pagestyle{fancy}
+
+\thispagestyle{empty}
+
+
+%---------------------------------------------------------
+% Titre
+%---------------------------------------------------------
+\begin{center}
+	{\Large \bfseries
+		\decofourleft~Diplôme National du Brevet~\decofourright\\[10pt]
+		Série générale -- Polynésie -- 26 juin 2026
+		\marginpar{\rotatebox{90}{\textbf{A. P{}. M. E. P{}.}}}\\[10pt]
+		Corrigé }
+\end{center}
+
+\section*{\centering PREMIÈRE PARTIE : AUTOMATISMES (6 pts)}
+
+\subsection*{Question 1}
+	On range les valeurs de la série dans l'ordre croissant :
+
+	\centerline{\begin{tblr}{colspec={*{7}{X[c,1cm]}},hline{1,2}={4}{solid},vline{4,5}={solid}}
+		7&7&9&9&12&23&25\\
+	\end{tblr}}
+
+	Comme l'effectif total est impair (il y a 7 valeurs), la médiane est la valeur centrale (la quatrième), dans l'ordre croissant.
+
+	La médiane de la série est 9.
+
+\subsection*{Question 2}
+	Le 4 qui est le premier chiffre non nul est le quatrième chiffre après la virgule, le chiffre des dix-millièmes.
+
+	On a: \quad $\np{0,000457} = 4,57 \times \np{0,0001} = 4,57 \times 10^{-4}$.
+
+	La notation scientifique de $\np{0,000457}$ est : \quad $4,57 \times 10^{-4}$.
+
+\subsection*{Question 3}
+	Comme le triangle est rectangle en B, on choisit [AB] comme base du triangle et donc, la hauteur correspondante est [BC].
+
+	On a donc : \quad $\mathcal{A}_{\mathrm{ABC}} = \dfrac{\text{base} \times \text{hauteur}}{2} = \dfrac{\mathrm{AB} \times \mathrm{BC}}{2} = \dfrac{8 \times 6}{2} = \dfrac{48}{2} = 24$.
+
+	Comme les longueurs sont données en centimètres, le calcul précédent donne une aire en centimètres carrés.
+
+	L'aire du triangle ABC est donc \quad \np[cm^2]{24}.
+
+\subsection*{Question 4}
+	Puisque l'on pioche un beignet au hasard et qu'ils semblent identiques, on est en situation d'équiprobabilité.
+
+	La probabilité d'un évènement est le nombre d'issues favorables à l'évènement, divisé par le nombre total d'issues.
+
+	Il y a en tout :\quad $6 + 5 + 4 = 15$ beignets.
+
+	Donc la probabilité de piocher un beignet à la framboise est :\quad $\dfrac{4}{15}$.
+
+\subsection*{Question 5}
+	Le coefficient multiplicateur d'une baisse de 10\,\% est : \quad $c = 1 - \dfrac{10}{100} = 1 - 0,1 = 0,9$.
+
+ $800 \times 0,9 = 80 \times 9 =  720$, donc le prix, après réduction, est de: 720\,\euro{}.
+
+	\emph{Variante :} $800 \times \dfrac{10}{100} = 80$, \quad 10\,\% de 800\,\euro{} représentent 80\,\euro{}.
+
+$800 - 80 = 720$, donc le prix, après réduction, est de: 720\,\euro{}.
+
+\subsection*{Question 6}
+	Développons : \quad $B = 4y(3y - 1) = 4y \times 3y - 4y \times 1 = 4 \times 3 \times y \times y - 4y = 12y^2 - 4y$.
+
+	La forme développée de $B$ est :\quad $B = 12y^2 - 4y$.
+
+\subsection*{Question 7}
+	On sait qu'un litre correspond à \np[dm^3]{1}, et que $\np[dm]{1} = \np[cm]{10}$, donc $\np[dm^3]{1} = 10^3\,\mathrm{cm}^3 = \np[cm^3]{1000}$.
+
+
+	On peut faire un tableau de conversion :\quad
+	\begin{tblr}{colspec={*{6}{X[c,4mm]}},colsep=1pt,hlines, vlines,vline{4}={1.2pt}}
+		\SetCell[c=3]{c}{$\mathrm{dm}^3$} &  & & \SetCell[c=3]{c}$\mathrm{cm}^3$ \\
+		&&3&5&7&0\\
+	\end{tblr}
+
+	\np[L]{3,57} correspond donc à \np[cm^3]{3570}.
+
+	\textbf{Bonne réponse : D}.
+
+\subsection*{Question 8}
+	L'image de 4 par la fonction $f$ est :\quad $f(4) = 3 \times 4 - 5 = 12 - 5 = 7$.
+
+	On a $f(4) = 7$.
+
+	\textbf{Bonne réponse : B}.
+
+\subsection*{Question 9}
+	ABCD est un quadrilatère.
+
+	Si on appelle O le point d'intersection des diagonales, les codages de la figure indiquent que DO = OB, et AO = OC.
+
+	Ainsi, les diagonales se coupent en leurs milieux : cela garantit que ABCD est un parallélogramme.
+
+	Comme le codage pour AO n'est pas le même que celui pour DO, on ne peut pas affirmer AO = DO : donc les diagonales n'ont pas forcément la même longueur, on ne peut pas affirmer que ABCD est un rectangle.
+
+	Comme il n'y a aucun codage d'angle droit entre les diagonales, on ne peut pas affirmer que ABCD est un losange.
+
+	Comme un carré est à la fois un losange et un rectangle, on ne peut pas affirmer que ABCD est un carré.
+
+	\emph{Variante :} Pour l'absence de codage pour un rectangle, on peut aussi dire qu'il n'y a pas de codage d'angle droit entre deux côtés consécutifs, et pour l'absence de codage pour un losange, on peut aussi dire qu'il n'y a pas de codage de côtés consécutifs de même longueur.
+
+	\medskip
+
+	Quoi qu'il en soit, la seule nature qui est confirmée par les codages, c'est que le quadrilatère ABCD est un parallélogramme.
+
+	\textbf{Bonne réponse : D}.
+
+\needspace{10\baselineskip}
+\section*{\centering DEUXIÈME PARTIE (14 pts)}
+
+\section*{Exercice 1 (4 points)}
+\subsection*{Partie A}
+\begin{enumerate}
+	\item \begin{enumerate}
+		\item D'après la figure, on a : \quad $\mathrm{AB} = 3x + 1$.
+
+		Avec $x = 10$, cela donne : \quad $\mathrm{AB} = 3 \times 10 + 1 = 31$.
+
+		La longueur AB vaut donc 31.
+
+		\item De même, on a :\quad $\mathrm{AD} = x - 2 = 10 - 2 = 8$.
+
+		Comme ABCD est un rectangle, ses côtés opposés sont de même longueur, donc :
+
+		$\mathcal{P}_{\mathrm{ABCD}} = 2\big(\mathrm{AB} + \mathrm{AD}\big) = 2\times (31 + 8) = 2\times 39 = 78$.
+
+		Le périmètre de ABCD est bien de 78, pour $x=10$.
+	\end{enumerate}
+	\item En généralisant :\quad
+	$\mathcal{P}_{\mathrm{ABCD}} = 2\big(\mathrm{AB} + \mathrm{AD}\big) = 2\times (3x + 1 + x - 2) = 2\times (4x - 1) = 8x - 2$.
+
+	Le périmètre de ABCD est bien donné par l'expression \quad $8x-2$.
+\end{enumerate}
+
+\subsection*{Partie B}
+\begin{enumerate}
+	\item Si on choisit $x = 7$:
+	\begin{itemize}
+		\item le périmètre de ABCD est :\quad $8 \times 7 - 2 = 56 - 2 = 54$;
+		\item le périmètre de IJK est : \quad $6 \times 7 + 9 = 42 + 9 = 51$.
+	\end{itemize}
+	Comme les deux périmètres ne sont pas égaux, le programme va afficher \og Les deux périmètres ne sont pas égaux \fg{} pendant 2 secondes.
+
+	\item \begin{enumerate}
+		\item Dans la cellule \textsf{B2}, on veut afficher le périmètre de ABCD, donné par l'expression $8x - 2$, en utilisant la valeur $x$ qui est renseignée dans la cellule \textsf{A2}.
+
+		La formule correcte est donc :\quad \textsf{=8*A2-2}.
+
+		Pourquoi les autres propositions sont fausses :
+		\begin{itemize}
+			\item \textsf{=8*5-2} \quad renvoie la valeur correcte pour la cellule \textsf{B2}, mais renverra toujours 38 quand on l'étirera vers le bas, car le \textsf{5} ne sera pas modifié;
+			\item \textsf{=8*B2-2} \quad provoquera une erreur : c'est ce que l'on appelle une référence circulaire. La valeur de la cellule \textsf{B2} se fait à partir de la cellule \textsf{B2} : ça tourne en rond.
+			\item \textsf{=8*A1-2} \quad provoquera une erreur : dans la cellule \textsf{A1}, il y a la lettre $x$, mais du coup, ce n'est pas un nombre que le tableur peut multiplier par 8.
+		\end{itemize}
+
+		\item Nour a constaté que pour $x = 5$ le périmètre de ABCD est \textbf{inférieur} à celui de IJK, par contre, pour $x = 6$, le périmètre de ABCD est \textbf{supérieur} à celui de IJK.
+
+		Elle se dit donc que les courbes représentant les périmètres en fonction de $x$ doivent se croiser, entre l'abscisse 5 et l'abscisse 6.
+	\end{enumerate}
+	\item Résolvons l'équation :
+	\begin{align*}
+		8x - 2  & = 6x + 9        \\
+		8x - 6x & = 9 + 2         \\
+		2x      & = 11            \\
+		x       & = \dfrac{11}{2}
+	\end{align*}
+
+	L'équation a une seule solution :\quad $\dfrac{11}{2} = 5,5$.
+
+	C'est pour $x = 5,5$ que les deux figures ont le même périmètre.
+\end{enumerate}
+
+\needspace{10\baselineskip}
+\section*{Exercice 2 (4 points)}
+\begin{enumerate}
+	\item \begin{enumerate}
+		\item D'après le codage de la figure, le triangle CBF est isocèle en B, et donc les angles à la base ont la même mesure.
+
+		On a donc, en degré:\quad $\widehat{\mathrm{CBF}} = \widehat{\mathrm{BCF}} = 74$.
+
+		\item La somme des angles d'un triangle est un angle plat, de mesure 180\degres.
+
+		On a donc, en degré:\quad $\widehat{\mathrm{CBF}}+\widehat{\mathrm{BCF}}+\widehat{\mathrm{CFB}} = 180$.
+
+		En remplaçant par les mesure connues :\quad $\widehat{\mathrm{CBF}} + 74 + 74 = 180$.
+
+		Finalement, on a donc : \quad $\widehat{\mathrm{CBF}} = 180 - (74 + 74) = 180 - 148 = 32$.
+
+		L'angle $\widehat{\mathrm{CBF}}$ a donc une mesure de 32\degres.
+	\end{enumerate}
+
+	\item Dans le triangle ABC, on connaît les longueurs des trois côtés :
+	\begin{itemize}
+		\item le carré du côté le plus long est :\quad $\mathrm{AC}^2 = 5^2 = 25$;
+		\item la somme des carrés des deux petits côtés est :\quad $\mathrm{AB}^2 + \mathrm{BC}^2 = 3^2 + 4^2 = 25$.
+	\end{itemize}
+
+	On constate que \quad $\mathrm{AC}^2 = \mathrm{AB}^2 + \mathrm{BC}^2$,\quad d'après la réciproque du théorème de Pythagore, on peut affirmer que le triangle ABC est un triangle rectangle en B.
+
+	\item Le triangle BGF est rectangle en G, donc on peut utiliser les formules de trigonométrie, dans ce triangle.
+
+	On s'intéresse à l'angle $\widehat{\mathrm{FBG}}$.
+
+	\begin{itemize}
+		\item On connaît la longueur en cm de l'hypoténuse du triangle :\quad $\mathrm{BF} = 4$;
+		\item On connaît la longueur en cm du côté adjacent à l'angle $\widehat{\mathrm{FBG}}$:\quad $\mathrm{BG} = 2$;
+	\end{itemize}
+
+	On peut donc calculer le cosinus de l'angle :\quad $\cos\left(\widehat{\mathrm{FBG}}\right) = \dfrac{\text{côté adjacent}}{\text{hypoténuse}} = \dfrac{\mathrm{BG}}{\mathrm{BF}} = \dfrac{2}{4} = \dfrac{1}{2}$.
+
+	On a donc : \quad $\widehat{\mathrm{FBG}} = \arccos\left(\dfrac{1}{2}\right) = 60\degres$.
+
+	\item Les points A, B et G sont alignés si et seulement si l'angle $\widehat{\mathrm{ABG}}$ est un angle plat, dont la mesure est égale à 180\degres.
+
+	Ici on a : \quad $\widehat{\mathrm{ABG}} = \widehat{\mathrm{ABC}} + \widehat{\mathrm{CBF}}+\widehat{\mathrm{FBG}}$.
+
+	Avec les mesures connues en degré : \quad $\widehat{\mathrm{ABG}} = 90 + 32 + 60 = 182$.
+
+	L'angle $\widehat{\mathrm{ABG}}$ n'est pas un angle plat, les points ne sont donc pas alignés.
+\end{enumerate}
+
+\needspace{10\baselineskip}
+% saut de page si moins de 10 lignes disponibles
+\section*{Exercice 3 (4 points)}
+\begin{enumerate}
+	\item On constate que Tahiti est à peu près au milieu entre l'équateur et le parallèle 30\degres{}S, et un peu plus à l'est que le méridien 150\degres{}O.
+
+	Le décalage entre Tahiti et le méridien 150\degres{}O est comparable au décalage entre Los Angeles et le méridien 120\degres{}O, donc on peut dire que les coordonnées géographiques approximatives de Tahiti sont $(148\degres{}\mathrm{O} ; 15\degres{}\mathrm{S})$.
+
+	\emph{Remarque :} L'île de Tahiti est en réalité aux coordonnées $(149\degres{}\mathrm{O} ; 17\degres{}\mathrm{S})$, mais la lecture sur le graphique ne permet pas d'avoir une précision au degré près, il y a donc une gamme de valeurs acceptables, comme réponse.
+
+	\item Le trajet a duré 22 h 10, temps d'attente compris.
+
+	Si on enlève 2 h 20 de temps d'attente, cela fait :
+
+	$22\text{ h }10 - 2\text{ h }20 = 22\text{ h }10 - 2 \text{ h }10 - 0\text{ h }10 = 20\text{ h} - 0\text{ h }10 = 19\text{ h }50$.
+
+	La durée combinée des deux vols est donc de 19 h 50 min.
+
+	\item \begin{enumerate}
+		\item Le diamètre de la médaille étant de \np[cm]{8,5}, son rayon est donc la moitié de cette longueur : \np[cm]{4,25}.
+
+		En appliquant la formule rappelée au document 3 :
+
+		$\mathcal{V}_{\text{médaille}} = \pi \times 4,25^2 \times 0,92 = \np{16,6175}\pi \approx52,205$.
+
+		Comme toutes les longueurs étaient en centimètres, on a bien, au dixième près un volume de \np[cm^3]{52,2}.
+
+		\item La masse d'argent sera donc proportionnelle à son volume. En faisant le calcul avec le volume arrondi au dixième obtenu précédemment :\quad
+		$10,5 \times 52,2 = 548,1$.
+
+		D'après ce calcul, la médaille contient donc environ \np[g]{548} d'argent, au gramme près.
+
+		\emph{Remarque :} En réalité, les médailles d'argent des jeux de Paris 2024 sont faites d'argent (pureté 925/1000), pour environ 507 g, et de 18 g de fer issu des rénovations de la Tour Eiffel, pour un total de 525 g.
+
+		Notre calcul donne un résultat supérieur, car il ne prend pas en compte les motifs en creux de la médaille, qui font qu'il y a un peu moins d'argent que le cylindre plein.
+
+
+	\end{enumerate}
+\end{enumerate}
+\end{document}
