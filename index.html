@@ -364,6 +364,9 @@ function nb(x){
 }
 // "de " + mot, avec élision en "d'" si le mot commence par une voyelle (ou h muet)
 function de_(mot){ return /^[aeiouhâàéèêëîïôöùûAEIOUH]/.test(mot) ? `d'${mot}` : `de ${mot}`; }
+// Exposant en chiffres unicode (ex: sup(-3) -> "⁻³"), pour les puissances de 10.
+function sup(n){ const map={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'}; return String(n).split('').map(c=>map[c]||c).join(''); }
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
 
 // SVG repère (réutilisé pour lecture de coordonnées / symétrie centrale)
 function svgRepere(points, unite=40, ox=160, oy=160, w=380, h=300) {
@@ -490,6 +493,56 @@ function svgThalesSablier(vals) {
     <text x="${Math.round((Ox+Cx)/2)-14}" y="${Math.round((Oy+Cy)/2)+4}" text-anchor="end" font-size="11" fill="${cOrange}" font-family="sans-serif">${lO}${lC}=${OC}</text>
     <text x="${Math.round((Ox+Dx)/2)+14}" y="${Math.round((Oy+Dy)/2)+4}" text-anchor="start" font-size="11" fill="${cOrange}" font-family="sans-serif">${lO}${lD}=${OD}</text>
   </svg>`;
+}
+
+// Triangle rectangle codé pour la trigonométrie (angle aigu marqué avec sa mesure, 3 côtés étiquetés)
+function svgTrigTriangle(labels, angleDeg, sideLabels){
+  const [lA,lB,lC]=labels;
+  const A={x:60,y:60}, B={x:60,y:200}, C={x:240,y:200};
+  const cStroke='var(--svg-stroke)', cOrange='var(--orange)', cBlue='var(--accent2)';
+  const s=12;
+  const rightMark=`<polyline points="${B.x},${B.y-s} ${B.x+s},${B.y-s} ${B.x+s},${B.y}" fill="none" stroke="${cStroke}" stroke-width="1.5"/>`;
+  const arcR=28;
+  const arc=`<path d="M${(C.x-arcR).toFixed(1)},${C.y} A${arcR},${arcR} 0 0 0 ${(C.x-arcR*0.62).toFixed(1)},${(C.y-arcR*0.78).toFixed(1)}" fill="none" stroke="${cOrange}" stroke-width="1.5"/>`;
+  return `<svg width="100%" viewBox="0 0 300 240" style="max-width:280px">
+    <line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="${cStroke}" stroke-width="2"/>
+    <line x1="${B.x}" y1="${B.y}" x2="${C.x}" y2="${C.y}" stroke="${cStroke}" stroke-width="2"/>
+    <line x1="${A.x}" y1="${A.y}" x2="${C.x}" y2="${C.y}" stroke="${cStroke}" stroke-width="2"/>
+    ${rightMark}${arc}
+    <text x="${C.x-46}" y="${C.y-16}" font-size="12" fill="${cOrange}" font-weight="700" font-family="sans-serif">${angleDeg}°</text>
+    <text x="${A.x-14}" y="${A.y+4}" text-anchor="end" font-size="13" fill="currentColor" font-weight="600" font-family="sans-serif">${lA}</text>
+    <text x="${B.x-14}" y="${B.y+16}" text-anchor="end" font-size="13" fill="currentColor" font-weight="600" font-family="sans-serif">${lB}</text>
+    <text x="${C.x+10}" y="${C.y+16}" font-size="13" fill="currentColor" font-weight="600" font-family="sans-serif">${lC}</text>
+    <text x="${A.x-10}" y="${(A.y+B.y)/2}" text-anchor="end" font-size="11" fill="${cBlue}" font-family="sans-serif">${sideLabels[0]}</text>
+    <text x="${(B.x+C.x)/2}" y="${B.y+18}" text-anchor="middle" font-size="11" fill="${cBlue}" font-family="sans-serif">${sideLabels[1]}</text>
+    <text x="${(A.x+C.x)/2+12}" y="${(A.y+C.y)/2-6}" font-size="11" fill="${cBlue}" font-family="sans-serif">${sideLabels[2]}</text>
+  </svg>`;
+}
+
+// Deux triangles superposables (égaux), avec codage identique des éléments homologues
+function svgTrianglesEgaux(labels1, labels2, tickPattern){
+  const cStroke='var(--svg-stroke)', cTick='var(--accent2)';
+  function tri(ox,oy,size,lbls){ return {A:{x:ox+size*0.5,y:oy}, B:{x:ox,y:oy+size*0.8}, C:{x:ox+size,y:oy+size*0.8}, lbls}; }
+  const T1=tri(20,26,120,labels1), T2=tri(190,26,120,labels2);
+  function tick(p1,p2,n){
+    const dx=p2.x-p1.x, dy=p2.y-p1.y; const len=Math.hypot(dx,dy); const ux=dx/len, uy=dy/len;
+    const px=-uy, py=ux; const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+    let s=''; const gap=5;
+    for(let i=0;i<n;i++){ const t=(i-(n-1)/2)*gap; const cx=mx+ux*t, cy=my+uy*t;
+      s+=`<line x1="${(cx-px*5).toFixed(1)}" y1="${(cy-py*5).toFixed(1)}" x2="${(cx+px*5).toFixed(1)}" y2="${(cy+py*5).toFixed(1)}" stroke="${cTick}" stroke-width="1.5"/>`; }
+    return s;
+  }
+  function labelPts(t){
+    const cx=(t.A.x+t.B.x+t.C.x)/3, cy=(t.A.y+t.B.y+t.C.y)/3;
+    return ['A','B','C'].map((k,i)=>{ const pt=t[k]; const dx=pt.x-cx, dy=pt.y-cy; const len=Math.hypot(dx,dy)||1; const ox=dx/len*16, oy=dy/len*16;
+      return `<text x="${(pt.x+ox).toFixed(1)}" y="${(pt.y+oy+4).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="var(--svg-text)" font-family="sans-serif">${t.lbls[i]}</text>`; }).join('');
+  }
+  function drawTri(t){
+    return `<polygon points="${t.A.x},${t.A.y} ${t.B.x},${t.B.y} ${t.C.x},${t.C.y}" fill="none" stroke="${cStroke}" stroke-width="2"/>
+      ${tick(t.A,t.B,tickPattern[0])}${tick(t.B,t.C,tickPattern[1])}${tick(t.C,t.A,tickPattern[2])}
+      ${labelPts(t)}`;
+  }
+  return `<svg width="100%" viewBox="0 0 340 190" style="max-width:340px">${drawTri(T1)}${drawTri(T2)}</svg>`;
 }
 
 function svgScratch(blocs) {
@@ -3854,6 +3907,847 @@ const GEN_5E = [
 
 ];
 
+const GEN_4E = [
+  // ── NOMBRES RELATIFS ───────────────────────────────
+  { theme:"Nombres relatifs", generate:()=>{
+    const a=rnd(2,12), b=rnd(2,12);
+    const signs=[[1,1],[1,-1],[-1,1],[-1,-1]];
+    const [sa,sb]=pick(signs);
+    const av=a*sa, bv=b*sb;
+    const res=av*bv;
+    const fmtTerm=x=>x<0?`(${nb(x)})`:nb(x);
+    const sameSign=(av<0)===(bv<0);
+    return {type:'input', text:`Calculez ${fmtTerm(av)} × ${fmtTerm(bv)}.`, answer:nb(res),
+      explication:`Pour multiplier deux nombres relatifs, on multiplie leurs valeurs absolues : ${a} × ${b} = ${a*b}. Comme les deux facteurs sont ${sameSign?'de même signe':'de signes contraires'}, le résultat est ${sameSign?'positif':'négatif'} : ${fmtTerm(av)} × ${fmtTerm(bv)} = <strong>${nb(res)}</strong>.`};
+  }},
+
+  { theme:"Nombres relatifs", generate:()=>{
+    const divisors=[[36,4],[48,6],[63,7],[54,9],[42,6],[72,8]];
+    const [prod,b] = pick(divisors);
+    const a=prod/b;
+    const signs=[[1,1],[1,-1],[-1,1],[-1,-1]];
+    const [sa,sb]=pick(signs);
+    const dividend=prod*sa*sb, divisor=b*sb, quotient=a*sa;
+    const fmtTerm=x=>x<0?`(${nb(x)})`:nb(x);
+    const sameSign=(dividend<0)===(divisor<0);
+    return {type:'input', text:`Calculez ${fmtTerm(dividend)} ÷ ${fmtTerm(divisor)}.`, answer:nb(quotient),
+      explication:`Pour diviser deux nombres relatifs, on divise leurs valeurs absolues : ${Math.abs(dividend)} ÷ ${Math.abs(divisor)} = ${Math.abs(quotient)}. Comme les deux nombres sont ${sameSign?'de même signe':'de signes contraires'}, le résultat est ${sameSign?'positif':'négatif'} : ${fmtTerm(dividend)} ÷ ${fmtTerm(divisor)} = <strong>${nb(quotient)}</strong>.`};
+  }},
+
+  { theme:"Nombres relatifs", generate:()=>{
+    const n=rnd(3,6);
+    let neg=0; const factors=[];
+    for(let i=0;i<n;i++){ const s=pick([1,-1]); if(s<0) neg++; factors.push(s<0?`(−${rnd(2,9)})`:`${rnd(2,9)}`); }
+    const positive = neg%2===0;
+    const choices=['Positif','Négatif'];
+    const correct=positive?0:1;
+    return {type:'qcm', text:`Sans calculer le résultat, quel est le signe du produit ${factors.join(' × ')} ?`, choices, correct,
+      explication:`Le signe d'un produit de plusieurs facteurs relatifs (non nuls) dépend uniquement du nombre de facteurs négatifs : s'il y en a un nombre pair, le produit est positif ; s'il y en a un nombre impair, il est négatif. Ici, il y a <strong>${neg}</strong> facteur${neg>1?'s':''} négatif${neg>1?'s':''} (nombre ${positive?'pair':'impair'}), donc le produit est <strong>${positive?'positif':'négatif'}</strong>.`};
+  }},
+
+  { theme:"Nombres relatifs", generate:()=>{
+    const a=rnd(2,9), b=rnd(2,9), c=rnd(2,9);
+    const sa=pick([1,-1]), sc=pick([1,-1]);
+    const av=a*sa, cv=c*sc;
+    const prod=b*cv;
+    const res=av+prod;
+    const fmtTerm=x=>x<0?`(${nb(x)})`:nb(x);
+    return {type:'input', text:`Calculez ${fmtTerm(av)} + ${b} × ${fmtTerm(cv)}.`, answer:nb(res),
+      explication:`La multiplication est prioritaire sur l'addition : on calcule d'abord ${b} × ${fmtTerm(cv)} = ${nb(prod)}. Il reste ensuite à calculer ${fmtTerm(av)} + ${fmtTerm(prod)} = <strong>${nb(res)}</strong>.`};
+  }},
+
+  { theme:"Nombres relatifs", generate:()=>{
+    const a=rnd(3,15), b=rnd(3,15);
+    const variants=[
+      {expr:`+${a} − (+${b})`, simp:`${a} − ${b}`, res:a-b},
+      {expr:`+${a} + (−${b})`, simp:`${a} − ${b}`, res:a-b},
+      {expr:`−${a} − (−${b})`, simp:`−${a} + ${b}`, res:b-a},
+      {expr:`−${a} + (+${b})`, simp:`−${a} + ${b}`, res:b-a},
+    ];
+    const v=pick(variants);
+    return {type:'input', text:`Écrivez sous forme simplifiée (sans parenthèses ni signe +) : ${v.expr}`, answer:v.simp,
+      acceptedAnswers:[v.simp, v.simp.replace(/ /g,'')],
+      explication:`Ajouter l'opposé d'un nombre revient à le soustraire, et soustraire l'opposé d'un nombre revient à l'ajouter. On peut donc supprimer les parenthèses et le signe + de tête en appliquant cette règle : <strong>${v.simp}</strong> (qui vaut ${nb(v.res)}).`};
+  }},
+
+  { theme:"Nombres relatifs", generate:()=>{
+    const vals=shuffle([rnd(-15,-1), rnd(-15,-1), rnd(1,15), rnd(1,15)]);
+    const sorted=[...vals].sort((x,y)=>x-y);
+    return {type:'input', text:`Rangez ces nombres dans l'ordre croissant : ${vals.map(nb).join(' ; ')}`, answer:sorted.map(nb).join(' < '),
+      explication:`Sur une droite graduée, un nombre relatif est plus petit qu'un autre s'il est situé plus à gauche. Un nombre négatif est toujours plus petit qu'un nombre positif, et entre deux négatifs, celui qui a la plus grande valeur absolue est le plus petit. Dans l'ordre croissant : <strong>${sorted.map(nb).join(' < ')}</strong>.`};
+  }},
+
+  // ── PUISSANCES & NOTATION SCIENTIFIQUE ─────────────
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const table=[{exp:6,val:'1 000 000'},{exp:5,val:'100 000'},{exp:4,val:'10 000'},{exp:3,val:'1 000'},{exp:2,val:'100'},{exp:-1,val:'0,1'},{exp:-2,val:'0,01'},{exp:-3,val:'0,001'},{exp:-4,val:'0,0001'}];
+    const t=pick(table);
+    return {type:'input', text:`Quelle est la valeur décimale de 10${sup(t.exp)} ?`, answer:t.val,
+      explication:`Un exposant positif indique combien de zéros suivent le 1 ; un exposant négatif indique le nombre de chiffres après la virgule (dont le dernier est 1). Ici, 10${sup(t.exp)} = <strong>${t.val}</strong>.`};
+  }},
+
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const table=[{val:'1 000 000',exp:6},{val:'100 000',exp:5},{val:'10 000',exp:4},{val:'1 000',exp:3},{val:'0,01',exp:-2},{val:'0,001',exp:-3},{val:'0,0001',exp:-4}];
+    const t=pick(table);
+    return {type:'input', text:`Écrivez ${t.val} sous la forme d'une puissance de 10.`, answer:`10${sup(t.exp)}`, acceptedAnswers:[`10${sup(t.exp)}`,`10^${t.exp}`],
+      explication:`On compte le nombre de rangs entre 1 et ${t.val} : ${t.val} = <strong>10${sup(t.exp)}</strong>.`};
+  }},
+
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const vals=[{sci:'5,3×10⁻³',dec:'0,0053'},{sci:'2,7×10⁴',dec:'27 000'},{sci:'8,1×10⁻²',dec:'0,081'},{sci:'4,5×10³',dec:'4 500'},{sci:'9,2×10⁻⁴',dec:'0,00092'},{sci:'6×10⁵',dec:'600 000'}];
+    const v=pick(vals);
+    return {type:'input', text:`Quelle est la valeur décimale de ${v.sci} ?`, answer:v.dec,
+      explication:`Pour passer de l'écriture scientifique à l'écriture décimale, on déplace la virgule du nombre de rangs indiqué par l'exposant (vers la droite si positif, vers la gauche si négatif) : ${v.sci} = <strong>${v.dec}</strong>.`};
+  }},
+
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const vals=[{dec:'45 000',sci:'4,5×10⁴'},{dec:'0,0072',sci:'7,2×10⁻³'},{dec:'320 000',sci:'3,2×10⁵'},{dec:'0,00061',sci:'6,1×10⁻⁴'},{dec:'8 300',sci:'8,3×10³'}];
+    const v=pick(vals);
+    return {type:'input', text:`Écrivez ${v.dec} en notation scientifique (de la forme a×10ⁿ avec 1 ⩽ a < 10).`, answer:v.sci,
+      explication:`On écrit le nombre sous la forme d'un chiffre non nul suivi d'une virgule (ici ${v.sci.split('×')[0]}), puis on multiplie par la puissance de 10 correspondant au décalage de la virgule : <strong>${v.sci}</strong>.`};
+  }},
+
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const n=rnd(2,6); let m=rnd(2,6); while(m===n) m=rnd(2,6);
+    const correct=`x${sup(n+m)}`;
+    const choices=shuffle([correct, `x${sup(n*m)}`, `${n+m}x`, `x${sup(Math.abs(n-m))}`]);
+    const c=choices.indexOf(correct);
+    return {type:'qcm', text:`Simplifiez : x${sup(n)} × x${sup(m)}`, choices, correct:c,
+      explication:`Pour multiplier deux puissances d'une même base, on additionne les exposants : x${sup(n)} × x${sup(m)} = <strong>x${sup(n+m)}</strong>.`};
+  }},
+
+  { theme:"Puissances & notation scientifique", generate:()=>{
+    const base=rnd(2,5); const exp=rnd(2,5);
+    const even=exp%2===0;
+    const choices=['Positif','Négatif'];
+    const correct=even?0:1;
+    return {type:'qcm', text:`Quel est le signe de (−${base})${sup(exp)} ?`, choices, correct,
+      explication:`Une puissance d'un nombre négatif est positive si l'exposant est pair, et négative si l'exposant est impair (c'est comme un produit de plusieurs facteurs négatifs identiques). Ici l'exposant ${exp} est ${even?'pair':'impair'}, donc (−${base})${sup(exp)} est <strong>${even?'positif':'négatif'}</strong>.`};
+  }},
+
+  // ── FRACTIONS & NOMBRES RATIONNELS ─────────────────
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const pairs=[[3,4,8],[2,3,9],[5,6,12],[1,4,8],[3,5,10],[2,7,14]];
+    const [na,d1,d2] = pick(pairs);
+    const k=d2/d1;
+    const nb2=rnd(1,d2-1);
+    const na2=na*k;
+    const numRes=na2+nb2;
+    return {type:'input', text:`Calculez ${frac(na,d1)} + ${frac(nb2,d2)}.`, answer:frac(numRes,d2),
+      explication:`${d2} est un multiple de ${d1} (${d2} = ${d1} × ${k}), donc on convertit la première fraction au dénominateur ${d2} : ${frac(na,d1)} = ${frac(na2,d2)}. On additionne ensuite les numérateurs : ${frac(na2,d2)} + ${frac(nb2,d2)} = <strong>${frac(numRes,d2)}</strong>.`};
+  }},
+
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const set=[[2,3,3,4],[3,4,2,5],[4,5,5,6],[2,5,3,4],[3,7,2,3]];
+    const [n1,d1,n2,d2]=pick(set);
+    const num=n1*n2, den=d1*d2;
+    const g=gcd(num,den);
+    const simp = g>1 ? frac(num/g,den/g) : frac(num,den);
+    return {type:'input', text:`Calculez ${frac(n1,d1)} × ${frac(n2,d2)} (donnez le résultat sous forme irréductible).`, answer:simp,
+      explication:`Pour multiplier deux fractions, on multiplie les numérateurs entre eux et les dénominateurs entre eux : ${frac(n1,d1)} × ${frac(n2,d2)} = ${frac(num,den)}${g>1?`, qui se simplifie par ${g} en <strong>${simp}</strong>`:', déjà irréductible'}.`};
+  }},
+
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const n=rnd(2,9), d=rnd(2,9);
+    if(Math.random()<0.5){
+      return {type:'input', text:`Donnez l'inverse de ${frac(n,d)}.`, answer:frac(d,n),
+        explication:`L'inverse d'une fraction non nulle s'obtient en échangeant le numérateur et le dénominateur : l'inverse de ${frac(n,d)} est <strong>${frac(d,n)}</strong>.`};
+    } else {
+      return {type:'input', text:`Donnez l'inverse de ${n}.`, answer:frac(1,n),
+        explication:`L'inverse d'un nombre non nul n est la fraction 1/n. L'inverse de ${n} est donc <strong>${frac(1,n)}</strong>.`};
+    }
+  }},
+
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const set=[[2,3,4,5],[3,4,2,3],[5,6,3,4],[2,5,3,7],[4,7,2,3]];
+    const [n1,d1,n2,d2]=pick(set);
+    const num=n1*d2, den=d1*n2;
+    const g=gcd(num,den);
+    const simp = g>1 ? frac(num/g,den/g) : frac(num,den);
+    return {type:'input', text:`Calculez ${frac(n1,d1)} ÷ ${frac(n2,d2)} (donnez le résultat sous forme irréductible).`, answer:simp,
+      explication:`Diviser par une fraction revient à multiplier par son inverse : ${frac(n1,d1)} ÷ ${frac(n2,d2)} = ${frac(n1,d1)} × ${frac(d2,n2)} = ${frac(num,den)}${g>1?`, qui se simplifie par ${g} en <strong>${simp}</strong>`:', déjà irréductible'}.`};
+  }},
+
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const d=pick([[1,3,1,2,1,4],[1,2,1,3,1,6],[2,3,1,4,1,2],[1,4,1,2,1,3]]);
+    const [na,da,nb2,db,nc,dc]=d;
+    const D=da*db*dc;
+    const N = na*(db*dc) + (nb2*nc)*da;
+    const g=gcd(N,D);
+    const simp = frac(N/g, D/g);
+    return {type:'input', text:`Calculez ${frac(na,da)} + ${frac(nb2,db)} × ${frac(nc,dc)} (résultat sous forme irréductible).`, answer:simp,
+      explication:`La multiplication est prioritaire sur l'addition : on calcule d'abord ${frac(nb2,db)} × ${frac(nc,dc)} = ${frac(nb2*nc,db*dc)}. On réduit ensuite les deux fractions au même dénominateur avant de les additionner : ${frac(na,da)} + ${frac(nb2*nc,db*dc)} = <strong>${simp}</strong>.`};
+  }},
+
+  { theme:"Fractions & nombres rationnels", generate:()=>{
+    const total=pick([[3,4],[2,3],[5,6],[3,5]]);
+    const [n,d]=total;
+    const part=pick([[1,2],[1,3],[2,3],[1,4]]);
+    const [n2,d2]=part;
+    const num=n*n2, den=d*d2;
+    const g=gcd(num,den);
+    const simp = g>1 ? frac(num/g,den/g) : frac(num,den);
+    return {type:'input', text:`Un plat représente ${frac(n,d)} d'une préparation. On en mange ${frac(n2,d2)}. Quelle fraction de la préparation a-t-on mangée ?`, answer:simp,
+      explication:`Prendre une fraction d'une fraction, c'est multiplier les deux fractions : ${frac(n2,d2)} × ${frac(n,d)} = ${frac(num,den)}${g>1?`, qui se simplifie par ${g} en <strong>${simp}</strong>`:', déjà irréductible'}.`};
+  }},
+
+  // ── CALCUL LITTÉRAL ─────────────────────────────────
+  { theme:"Calcul littéral", generate:()=>{
+    const a=rnd(2,9), b=rnd(1,9);
+    const neg=Math.random()<0.5;
+    const bv = neg ? -b : b;
+    const correct = neg ? `${a}x − ${a*b}` : `${a}x + ${a*b}`;
+    const wrong1 = neg ? `${a}x + ${a*b}` : `${a}x − ${a*b}`;
+    const wrong2 = `${a+bv}x`;
+    const wrong3 = `${a}x ${bv<0?'−':'+'} ${Math.abs(bv)}`;
+    const choices=shuffle([correct,wrong1,wrong2,wrong3]);
+    const c=choices.indexOf(correct);
+    return {type:'qcm', text:`Développez : ${a}(x ${bv<0?'−':'+'} ${Math.abs(bv)})`, choices, correct:c,
+      explication:`Développer, c'est distribuer le facteur de tête à chaque terme entre parenthèses : ${a} × x ${bv<0?'−':'+'} ${a} × ${Math.abs(bv)} = <strong>${correct}</strong>.`};
+  }},
+
+  { theme:"Calcul littéral", generate:()=>{
+    const a=rnd(3,9), b=rnd(1,9), c=rnd(1,8), d=rnd(1,9);
+    const A=Math.max(a,c+2), C=c;
+    const coefX=A-C, cst=b+d;
+    const fmtCst=k=> k<0 ? `− ${Math.abs(k)}` : `+ ${k}`;
+    const correct=`${coefX}x ${fmtCst(cst)}`;
+    const wrong1=`${A+C}x ${fmtCst(cst)}`;
+    const wrong2=`${coefX}x ${fmtCst(b-d)}`;
+    const wrong3=`${coefX}x − ${cst}`;
+    const choices=shuffle([correct,wrong1,wrong2,wrong3]);
+    const idx=choices.indexOf(correct);
+    return {type:'qcm', text:`Réduisez : ${A}x + ${b} − ${C}x + ${d}`, choices, correct:idx,
+      explication:`On regroupe entre eux les termes en x, puis les termes constants : (${A} − ${C})x + (${b} + ${d}) = <strong>${correct}</strong>.`};
+  }},
+
+  { theme:"Calcul littéral", generate:()=>{
+    const x=pick([1,2,3,4,5]);
+    const exprs=[
+      {q:`Calculez 3x² − 2x pour x = ${x}.`, ans:`${3*x*x-2*x}`, expl:`On remplace x par ${x}, en calculant le carré avant la multiplication : 3×${x}² − 2×${x} = 3×${x*x} − ${2*x} = ${3*x*x} − ${2*x} = <strong>${3*x*x-2*x}</strong>.`},
+      {q:`Calculez 2x + 5 pour x = ${x}.`, ans:`${2*x+5}`, expl:`On remplace x par ${x} : 2×${x} + 5 = ${2*x} + 5 = <strong>${2*x+5}</strong>.`},
+      {q:`Calculez 4x² + x pour x = ${x}.`, ans:`${4*x*x+x}`, expl:`On remplace x par ${x}, en calculant le carré avant la multiplication : 4×${x}² + ${x} = ${4*x*x} + ${x} = <strong>${4*x*x+x}</strong>.`},
+    ];
+    const v=pick(exprs);
+    return {type:'input', text:v.q, answer:v.ans, explication:v.expl};
+  }},
+
+  { theme:"Calcul littéral", generate:()=>{
+    const x=-pick([1,2,3,4,5]);
+    const exprs=[
+      {q:`Calculez x² + 3 pour x = ${x}.`, ans:`${x*x+3}`, expl:`Attention : le carré d'un nombre négatif est positif. On remplace x par ${x} : (${x})² + 3 = ${x*x} + 3 = <strong>${x*x+3}</strong>.`},
+      {q:`Calculez 2x² − 1 pour x = ${x}.`, ans:`${2*x*x-1}`, expl:`Attention : le carré d'un nombre négatif est positif. On remplace x par ${x} : 2×(${x})² − 1 = 2×${x*x} − 1 = ${2*x*x} − 1 = <strong>${2*x*x-1}</strong>.`},
+      {q:`Calculez −x² pour x = ${x}.`, ans:`${-(x*x)}`, expl:`Attention : ici c'est l'opposé du carré. On calcule d'abord (${x})² = ${x*x}, puis on prend son opposé : −${x*x} = <strong>${-(x*x)}</strong>.`},
+    ];
+    const v=pick(exprs);
+    return {type:'input', text:v.q, answer:v.ans, explication:v.expl};
+  }},
+
+  { theme:"Calcul littéral", generate:()=>{
+    const x=rnd(1,6);
+    const a=rnd(2,5), b=rnd(1,10);
+    const left=a*x+b;
+    const wrongVal=left+pick([1,-1,2,-2]);
+    const useTrue=Math.random()<0.5;
+    const shownVal = useTrue?left:wrongVal;
+    return {type:'qcm', text:`Pour x = ${x}, l'égalité ${a}x + ${b} = ${shownVal} est-elle vraie ?`, choices:['Vraie','Fausse'], correct: useTrue?0:1,
+      explication:`On remplace x par ${x} dans l'expression : ${a}×${x} + ${b} = ${a*x} + ${b} = ${left}. ${useTrue?`Cette valeur correspond bien à ${shownVal}, l'égalité est donc <strong>vraie</strong>.`:`Cette valeur (${left}) est différente de ${shownVal}, l'égalité est donc <strong>fausse</strong>.`}`};
+  }},
+
+  { theme:"Calcul littéral", generate:()=>{
+    const nvar=pick(['n','x']);
+    const set=[
+      {label:'le double de la somme d\'un nombre et de 3',expr:`2(${nvar}+3)`},
+      {label:"la somme du double d'un nombre et de 3",expr:`2${nvar}+3`},
+      {label:"le carré de la somme d'un nombre et de 2",expr:`(${nvar}+2)²`},
+      {label:"la différence entre le carré d'un nombre et 5",expr:`${nvar}²−5`},
+    ];
+    const shu=shuffle(set); const target=shu[0]; const decoys=shu.slice(1);
+    const choices=shuffle([target.expr,...decoys.map(d=>d.expr)]);
+    const correct=choices.indexOf(target.expr);
+    return {type:'qcm', text:`On note ${nvar} un nombre. Quelle expression correspond à « ${target.label} » ?`, choices, correct,
+      explication:`« ${target.label} » se traduit par <strong>${target.expr}</strong>.`};
+  }},
+
+  // ── ARITHMÉTIQUE ────────────────────────────────────
+  { theme:"Arithmétique", generate:()=>{
+    const nums=[91,97,87,89,111,101,121,113];
+    const n=pick(nums);
+    const isPrime=k=>{ if(k<2) return false; for(let i=2;i*i<=k;i++){ if(k%i===0) return false; } return true; };
+    const p=isPrime(n);
+    let facteur='';
+    if(!p){ for(let i=2;i*i<=n;i++){ if(n%i===0){ facteur=`${n} = ${i} × ${n/i}`; break; } } }
+    return {type:'qcm', text:`Le nombre ${n} est-il premier ?`, choices:['Oui','Non'], correct:p?0:1,
+      explication: p ? `${n} n'est divisible par aucun entier autre que 1 et lui-même. C'est donc un nombre <strong>premier</strong>.` : `On peut trouver un diviseur de ${n} autre que 1 et lui-même : ${facteur}. Ce n'est donc <strong>pas un nombre premier</strong>.`};
+  }},
+
+  { theme:"Arithmétique", generate:()=>{
+    const cases=[{n:60,dec:'2² × 3 × 5'},{n:72,dec:'2³ × 3²'},{n:84,dec:'2² × 3 × 7'},{n:90,dec:'2 × 3² × 5'},{n:100,dec:'2² × 5²'},{n:126,dec:'2 × 3² × 7'}];
+    const c=pick(cases);
+    return {type:'input', text:`Décomposez ${c.n} en produit de facteurs premiers.`, answer:c.dec, acceptedAnswers:[c.dec, c.dec.replace(/ /g,'')],
+      explication:`On divise successivement ${c.n} par les nombres premiers 2, 3, 5, 7... jusqu'à obtenir 1 : ${c.n} = <strong>${c.dec}</strong>.`};
+  }},
+
+  { theme:"Arithmétique", generate:()=>{
+    const pairs=[[24,36,12],[18,30,6],[42,56,14],[16,24,8],[45,60,15],[28,42,14]];
+    const [a,b,pgcd]=pick(pairs);
+    return {type:'input', text:`Quel est le plus grand diviseur commun à ${a} et ${b} ?`, answer:`${pgcd}`,
+      explication:`On cherche le plus grand nombre qui divise à la fois ${a} et ${b}. On trouve que leur PGCD est <strong>${pgcd}</strong> (en effet ${a} = ${pgcd} × ${a/pgcd} et ${b} = ${pgcd} × ${b/pgcd}).`};
+  }},
+
+  { theme:"Arithmétique", generate:()=>{
+    const n=pick([120,315,240,450,144,225]);
+    const criteres=[2,3,4,5,9,10];
+    const divs=criteres.filter(d=>n%d===0);
+    const pool=[2,3,4,5,6,7,8,9,10,11];
+    const nonDivs=pool.filter(d=>n%d!==0 && !divs.includes(d));
+    const correct=pick(divs);
+    const wrongs=shuffle(nonDivs).slice(0,3);
+    const choices=shuffle([String(correct), ...wrongs.map(String)]);
+    const idx=choices.indexOf(String(correct));
+    return {type:'qcm', text:`Parmi ces nombres, lequel divise ${n} ?`, choices, correct:idx,
+      explication:`On applique les critères de divisibilité (par 2 : chiffre des unités pair ; par 3 ou 9 : somme des chiffres multiple de 3 ou 9 ; par 5 : termine par 0 ou 5 ; par 10 : termine par 0). Ici, ${n} = ${correct} × ${n/correct}, donc <strong>${correct}</strong> divise ${n}.`};
+  }},
+
+  { theme:"Arithmétique", generate:()=>{
+    const pairs=[[18,24,6],[12,16,4],[20,28,4],[15,25,5],[21,35,7],[16,40,8]];
+    const [n,d,g]=pick(pairs);
+    return {type:'input', text:`Rendez la fraction ${frac(n,d)} irréductible.`, answer:frac(n/g,d/g),
+      explication:`On cherche le PGCD de ${n} et ${d}, qui est ${g}, puis on divise le numérateur et le dénominateur par ce PGCD : ${frac(n,d)} = <strong>${frac(n/g,d/g)}</strong>.`};
+  }},
+
+  { theme:"Arithmétique", generate:()=>{
+    const cases=[{a:6,b:8,ppcm:24},{a:4,b:6,ppcm:12},{a:9,b:12,ppcm:36},{a:5,b:15,ppcm:15},{a:8,b:12,ppcm:24}];
+    const c=pick(cases);
+    return {type:'input', text:`Deux engrenages tournent en boucle : le premier revient à sa position initiale toutes les ${c.a} secondes, le second toutes les ${c.b} secondes. Au bout de combien de secondes seront-ils à nouveau en position initiale en même temps ?`, answer:`${c.ppcm}`,
+      explication:`On cherche le plus petit nombre qui soit à la fois multiple de ${c.a} et de ${c.b} (leur PPCM). On trouve <strong>${c.ppcm} secondes</strong>.`};
+  }},
+
+  // ── PYTHAGORE (reprise intégrale du niveau 3e) ─────
+  { theme:"Pythagore - Théorème", generate:()=>{
+    const triplets=[[3,4,5],[5,12,13],[8,15,17],[6,8,10],[9,12,15],[7,24,25],[10,24,26],[15,20,25],[12,16,20]];
+    const [a,b,c]=pick(triplets);
+    const lets=pick([['A','B','C'],['M','N','P'],['R','S','T']]);
+    const [L1,L2,L3]=lets;
+    const angleD=pick([L1,L2,L3]);
+    const autres=lets.filter(l=>l!==angleD);
+    const unknown=pick(['hyp','cote']);
+    let text,answer,explication;
+    if(unknown==='hyp'){
+      text=`Dans le triangle ${L1}${L2}${L3} rectangle en ${angleD}, ${autres[0]}${angleD} = ${a} cm et ${angleD}${autres[1]} = ${b} cm. Calculez ${autres[0]}${autres[1]}.`;
+      answer=`${c}`;
+      explication=`D'après le théorème de Pythagore, dans un triangle rectangle le carré de l'hypoténuse est égal à la somme des carrés des deux autres côtés. Ici l'hypoténuse est [${autres[0]}${autres[1]}] (le côté opposé à l'angle droit) : ${autres[0]}${autres[1]}² = ${autres[0]}${angleD}² + ${angleD}${autres[1]}² = ${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b}. On calcule ensuite la racine carrée : ${autres[0]}${autres[1]} = √${a*a+b*b} = <strong>${c} cm</strong>.`;
+    } else {
+      text=`Dans le triangle ${L1}${L2}${L3} rectangle en ${angleD}, l'hypoténuse ${autres[0]}${autres[1]} = ${c} cm et ${autres[0]}${angleD} = ${a} cm. Calculez ${angleD}${autres[1]}.`;
+      answer=`${b}`;
+      explication=`D'après le théorème de Pythagore, ${autres[0]}${autres[1]}² = ${autres[0]}${angleD}² + ${angleD}${autres[1]}², l'hypoténuse [${autres[0]}${autres[1]}] étant le côté opposé à l'angle droit. On isole donc le côté cherché : ${angleD}${autres[1]}² = ${autres[0]}${autres[1]}² − ${autres[0]}${angleD}² = ${c}² − ${a}² = ${c*c} − ${a*a} = ${b*b}. On calcule ensuite la racine carrée : ${angleD}${autres[1]} = √${b*b} = <strong>${b} cm</strong>.`;
+    }
+    const useContext = Math.random()<0.3;
+    let finalText, finalAnswer, ctxType;
+    if(useContext){
+      const ctxChoice = Math.random()<0.5 ? 'terrain' : 'echelle';
+      if(ctxChoice==='terrain'){
+        const noun=pick(['terrain','jardin','parking','champ']);
+        const swap=Math.random()<0.5;
+        const [p,q]=swap?[b,a]:[a,b];
+        finalText=`Un ${noun} rectangulaire mesure ${p} m sur ${q} m. Quelle est la longueur de sa diagonale ?`;
+        finalAnswer=`${c}`; ctxType='terrain';
+      } else {
+        const askHeight=Math.random()<0.5;
+        const phrasing=pick([0,1]);
+        if(askHeight){
+          finalText=phrasing===0
+            ? `Une échelle de ${c} m est appuyée contre un mur. Sa base est à ${a} m du mur. À quelle hauteur atteint-elle le mur ?`
+            : `Une échelle de ${c} m est posée contre un mur, avec le pied à ${a} m du mur. Jusqu'à quelle hauteur monte-t-elle ?`;
+          finalAnswer=`${b}`;
+        } else {
+          finalText=phrasing===0
+            ? `Une échelle de ${c} m est appuyée contre un mur. Elle atteint une hauteur de ${b} m. À quelle distance du mur se trouve sa base ?`
+            : `Une échelle de ${c} m est posée contre un mur et monte jusqu'à ${b} m de hauteur. À quelle distance du mur se trouve son pied ?`;
+          finalAnswer=`${a}`;
+        }
+        ctxType=askHeight?'echelle_h':'echelle_b';
+      }
+    } else { finalText = text; finalAnswer = answer; ctxType = 'abstract'; }
+    let labelVert, labelHoriz, labelHyp;
+    if(ctxType==='echelle_h'){ labelVert='?'; labelHoriz=`${a} m`; labelHyp=`${c} m`; }
+    else if(ctxType==='echelle_b'){ labelVert=`${b} m`; labelHoriz='?'; labelHyp=`${c} m`; }
+    else if(ctxType==='terrain'){ labelVert=`${a} m`; labelHoriz=`${b} m`; labelHyp='?'; }
+    else { labelVert=`${a} cm`; labelHoriz = unknown==='cote' ? '?' : `${b} cm`; labelHyp = unknown==='hyp' ? '?' : `${c} cm`; }
+    let finalExpl;
+    if(ctxType==='echelle_h') finalExpl=`L'échelle, le mur et le sol forment un triangle rectangle dont l'échelle est l'hypoténuse. D'après le théorème de Pythagore : hauteur² = échelle² − base² = ${c}² − ${a}² = ${c*c} − ${a*a} = ${b*b}. On calcule la racine carrée : hauteur = √${b*b} = <strong>${b} m</strong>.`;
+    else if(ctxType==='echelle_b') finalExpl=`L'échelle, le mur et le sol forment un triangle rectangle dont l'échelle est l'hypoténuse. D'après le théorème de Pythagore : base² = échelle² − hauteur² = ${c}² − ${b}² = ${c*c} − ${b*b} = ${a*a}. On calcule la racine carrée : base = √${a*a} = <strong>${a} m</strong>.`;
+    else if(ctxType==='terrain') finalExpl=`La diagonale d'un terrain rectangulaire est l'hypoténuse du triangle rectangle formé par deux côtés du terrain. D'après le théorème de Pythagore : diagonale² = ${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b}. On calcule la racine carrée : diagonale = √${a*a+b*b} = <strong>${c} m</strong>.`;
+    else finalExpl = explication;
+    return {
+      type:'input', text:finalText, answer:finalAnswer, explication:finalExpl,
+      figure: svgPythagore(
+        [{x:60,y:60, label:autres[0], lx:44, ly:56,  la:'end'},
+         {x:60,y:200,label:angleD,    lx:44, ly:216, la:'end'},
+         {x:240,y:200,label:autres[1],lx:256,ly:216, la:'start'}],
+        [{label:labelVert,  tx:40, ty:135, anchor:'end'},
+         {label:labelHoriz, tx:150,ty:218, anchor:'middle'},
+         {label:labelHyp,   tx:172,ty:118, anchor:'middle'}],
+        {x:60,y:200}
+      )
+    };
+  }},
+
+  { theme:"Pythagore - Réciproque", generate:()=>{
+    const triplets=[[3,4,5],[5,12,13],[8,15,17],[6,8,10],[9,12,15],[7,24,25],[10,24,26],[15,20,25],[12,16,20]];
+    const [a,b,c]=pick(triplets);
+    const variants=[
+      {text:`Un triangle a des côtés mesurant ${a} cm, ${b} cm et ${c} cm. Est-il rectangle ?`},
+      {text:`Peut-on affirmer qu'un triangle de côtés ${a}, ${b} et ${c} est rectangle ?`},
+    ];
+    const choices=[`Oui, car ${a}² + ${b}² = ${c}²`,`Non, car ${a} + ${b} ≠ ${c}`,`Oui, car ${a} + ${b} > ${c}`,`Non, car ${a}² + ${c}² ≠ ${b}²`];
+    return {type:'qcm', text:pick(variants).text, choices, correct:0, explication:`La réciproque du théorème de Pythagore permet de vérifier si un triangle est rectangle : si le carré du plus grand côté est égal à la somme des carrés des deux autres, alors le triangle est rectangle. Ici : ${a}² + ${b}² = ${a*a} + ${b*b} = ${c*c}, et ${c}² = ${c*c} également. L'égalité étant vérifiée, le triangle est bien <strong>rectangle</strong> (l'angle droit est opposé au côté ${c}, le plus long).`};
+  }},
+
+  { theme:"Pythagore - Réciproque", generate:()=>{
+    const cas=[
+      {a:3,b:4,c:5,rect:true},{a:6,b:8,c:10,rect:true},{a:5,b:12,c:13,rect:true},{a:9,b:12,c:15,rect:true},
+      {a:4,b:5,c:6,rect:false},{a:5,b:6,c:7,rect:false},{a:6,b:7,c:8,rect:false},{a:5,b:5,c:8,rect:false},
+      {a:7,b:10,c:12,rect:false},{a:6,b:9,c:11,rect:false},
+    ];
+    const v=pick(cas);
+    const {a,b,c,rect}=v;
+    const sommeCarres=a*a+b*b;
+    const carreC=c*c;
+    const variants=[
+      `Un triangle a des côtés mesurant ${a} cm, ${b} cm et ${c} cm. Ce triangle est-il rectangle ?`,
+      `On considère un triangle de côtés ${a} cm, ${b} cm et ${c} cm. Ce triangle est-il rectangle ?`,
+    ];
+    const explication = rect
+      ? `On compare le carré du plus grand côté à la somme des carrés des deux autres : ${a}² + ${b}² = ${a*a} + ${b*b} = ${sommeCarres}, et ${c}² = ${carreC}. Les deux valeurs sont égales, donc, d'après la réciproque du théorème de Pythagore, ce triangle est <strong>rectangle</strong>.`
+      : `On compare le carré du plus grand côté à la somme des carrés des deux autres : ${a}² + ${b}² = ${a*a} + ${b*b} = ${sommeCarres}, et ${c}² = ${carreC}. Comme ${sommeCarres} ≠ ${carreC}, les deux valeurs ne sont pas égales, donc, d'après la contraposée du théorème de Pythagore, ce triangle <strong>n'est pas rectangle</strong>.`;
+    return {type:'input', text:pick(variants), answer: rect?'Oui':'Non', explication};
+  }},
+
+  // ── TRIANGLES ÉGAUX ─────────────────────────────────
+  { theme:"Triangles égaux", generate:()=>{
+    const pattern=pick([[1,2,3],[2,1,3],[3,2,1],[1,3,2]]);
+    const letters1=pick([['A','B','C'],['M','N','P']]);
+    const letters2=pick([['D','E','F'],['R','S','T']]);
+    return {type:'qcm', text:`Les triangles ${letters1.join('')} et ${letters2.join('')} ci-dessous ont leurs côtés codés de façon identique (mêmes marques = mêmes longueurs). Que peut-on affirmer ?`,
+      choices:['Ils sont égaux (superposables)','Ils sont seulement de même aire','On ne peut rien affirmer','Ils ont juste un angle commun'], correct:0,
+      explication:`Lorsque deux triangles ont leurs trois côtés deux à deux de même longueur (codage identique), ils sont <strong>égaux</strong>, c'est-à-dire superposables : leurs angles homologues ont alors aussi la même mesure.`,
+      figure: svgTrianglesEgaux(letters1, letters2, pattern)};
+  }},
+
+  { theme:"Triangles égaux", generate:()=>{
+    const letters1=pick([['A','B','C'],['M','N','P']]);
+    const letters2=pick([['D','E','F'],['R','S','T']]);
+    const idx=rnd(0,2);
+    const pairsIdx=[[0,1],[1,2],[2,0]];
+    const [i,j]=pairsIdx[idx];
+    const side1=`${letters1[i]}${letters1[j]}`;
+    const side2=`${letters2[i]}${letters2[j]}`;
+    return {type:'input', text:`Les triangles ${letters1.join('')} et ${letters2.join('')} sont égaux, avec ${letters1[0]} ↔ ${letters2[0]}, ${letters1[1]} ↔ ${letters2[1]} et ${letters1[2]} ↔ ${letters2[2]}. Quel côté est homologue à [${side1}] ?`, answer:`[${side2}]`, acceptedAnswers:[`[${side2}]`,side2],
+      explication:`Deux côtés sont homologues (associés) lorsque leurs extrémités se correspondent dans la même correspondance de sommets. Ici, ${letters1[i]} correspond à ${letters2[i]} et ${letters1[j]} correspond à ${letters2[j]}, donc le côté homologue à [${side1}] est <strong>[${side2}]</strong>.`};
+  }},
+
+  { theme:"Triangles égaux", generate:()=>{
+    const letters1=pick([['A','B','C'],['M','N','P']]);
+    const letters2=pick([['D','E','F'],['R','S','T']]);
+    const idx=rnd(0,2);
+    const angleAt=letters1[idx];
+    const angleAt2=letters2[idx];
+    return {type:'input', text:`Les triangles ${letters1.join('')} et ${letters2.join('')} sont égaux, avec ${letters1[0]} ↔ ${letters2[0]}, ${letters1[1]} ↔ ${letters2[1]} et ${letters1[2]} ↔ ${letters2[2]}. Quel angle est homologue à l'angle en ${angleAt} ?`, answer:`L'angle en ${angleAt2}`, acceptedAnswers:[`L'angle en ${angleAt2}`,angleAt2],
+      explication:`Dans deux triangles égaux, l'angle homologue à un sommet est celui du sommet qui lui correspond dans la correspondance donnée. Ici, ${angleAt} correspond à ${angleAt2}, donc l'angle homologue à celui en ${angleAt} est <strong>l'angle en ${angleAt2}</strong>.`};
+  }},
+
+  { theme:"Triangles égaux", generate:()=>{
+    const a=rnd(3,9), b=rnd(3,9), c=rnd(3,9);
+    const same=Math.random()<0.5;
+    const a2=same?a:a+pick([1,-1,2]);
+    const text=`Le triangle ABC a pour côtés AB = ${a} cm, BC = ${b} cm, CA = ${c} cm. Le triangle DEF a pour côtés DE = ${a2} cm, EF = ${b} cm, FD = ${c} cm. Ces deux triangles sont-ils nécessairement égaux ?`;
+    const areEqual = a2===a;
+    return {type:'qcm', text, choices:['Oui, car leurs trois côtés sont deux à deux égaux','Non, un des côtés diffère','Oui, car ils ont la même aire','On ne peut pas savoir'], correct: areEqual?0:1,
+      explication: areEqual ? `Les trois côtés du premier triangle (${a}, ${b}, ${c}) sont respectivement égaux aux trois côtés du second (${a2}, ${b}, ${c}). D'après le cas d'égalité des triangles, deux triangles ayant leurs trois côtés deux à deux égaux sont <strong>égaux</strong>.` : `Les côtés AB = ${a} cm et DE = ${a2} cm sont différents, donc le cas d'égalité (trois côtés deux à deux égaux) ne s'applique pas : on ne peut pas affirmer que les triangles sont <strong>égaux</strong>.`};
+  }},
+
+  { theme:"Triangles égaux", generate:()=>{
+    const a=rnd(4,10);
+    const angleC=rnd(30,80);
+    return {type:'input', text:`Les triangles ABC et DEF sont égaux, avec A ↔ D, B ↔ E, C ↔ F. On sait que AB = ${a} cm et l'angle en C mesure ${angleC}°. Que peut-on en déduire pour le triangle DEF ?`, answer:`DE = ${a} cm et l'angle en F mesure ${angleC}°`,
+      acceptedAnswers:[`DE = ${a} cm et l'angle en F mesure ${angleC}°`,`DE=${a} et angle F=${angleC}`],
+      explication:`Dans deux triangles égaux, les côtés homologues ont la même longueur et les angles homologues ont la même mesure. Comme AB correspond à DE et l'angle en C correspond à l'angle en F, on en déduit que <strong>DE = ${a} cm et l'angle en F mesure ${angleC}°</strong>.`};
+  }},
+
+  { theme:"Triangles égaux", generate:()=>{
+    return {type:'qcm', text:`Deux triangles ont leurs trois angles deux à deux de même mesure, mais des côtés de longueurs différentes. Sont-ils nécessairement égaux ?`,
+      choices:['Oui, ils sont égaux','Non, ils ne sont pas nécessairement égaux','Oui, mais seulement s\'ils sont isocèles','Cela dépend de leur aire'], correct:1,
+      explication:`Avoir les mêmes angles ne suffit pas à garantir que deux triangles sont égaux (superposables) : ils peuvent avoir la même forme mais des tailles différentes (on dit qu'ils sont seulement <em>semblables</em>). Pour être égaux, il faut en plus que leurs côtés soient deux à deux de même longueur. La réponse est donc <strong>non, ils ne sont pas nécessairement égaux</strong>.`};
+  }},
+
+  // ── THALÈS (configuration emboîtée uniquement — le "papillon" est exclusif à la 3e) ─
+  { theme:"Thalès - Théorème", generate:()=>{
+    const configs=[
+      {AD:4, DB:2, AE:6, EC:3, BC:9,  letts:['A','B','C','D','E']},
+      {AD:6, DB:3, AE:8, EC:4, BC:12, letts:['A','B','C','D','E']},
+      {AD:3, DB:2, AE:6, EC:4, BC:10, letts:['M','N','P','K','L']},
+    ];
+    const cfg=pick(configs);
+    const AB=cfg.AD+cfg.DB;
+    const DE=cfg.AD/AB*cfg.BC;
+    const [lA,lB,lC,lD,lE]=cfg.letts;
+    const variants=[
+      `Dans la figure ci-dessous, les droites (${lD}${lE}) et (${lB}${lC}) sont parallèles. ${lB}${lC} = ${cfg.BC} cm. Calculez ${lD}${lE}.`,
+      `Dans la figure ci-dessous, (${lD}${lE}) ∥ (${lB}${lC}) et ${lB}${lC} = ${cfg.BC} cm. Calculez ${lD}${lE}.`,
+    ];
+    return {
+      type:'input', text:pick(variants), answer:nb(DE),
+      explication:`Comme (${lD}${lE}) et (${lB}${lC}) sont parallèles, le théorème de Thalès donne l'égalité des rapports : ${frac(lA+lD,lA+lB)} = ${frac(lD+lE,lB+lC)} = ${frac(lA+lE,lA+lC)}. On calcule d'abord ${lA}${lB} = ${lA}${lD} + ${lD}${lB} = ${cfg.AD} + ${cfg.DB} = ${AB}. On en déduit ${lD}${lE} = ${frac(cfg.AD,AB)} × ${lB}${lC} = ${frac(cfg.AD,AB)} × ${cfg.BC} = <strong>${nb(DE)} cm</strong>.`,
+      figure: svgThalesEmboite({AD:cfg.AD, DB:cfg.DB, AE:cfg.AE, EC:cfg.EC, BC:cfg.BC, lettres:cfg.letts})
+    };
+  }},
+
+  { theme:"Thalès - Théorème", generate:()=>{
+    const cfgs=[
+      {poteau:1.5, ombrePoteau:2, ombreArbre:8},
+      {poteau:2, ombrePoteau:3, ombreArbre:12},
+      {poteau:1.2, ombrePoteau:1.5, ombreArbre:9},
+    ];
+    const c=pick(cfgs);
+    const hArbre = c.poteau/c.ombrePoteau*c.ombreArbre;
+    return {
+      type:'input', text:`Un poteau de ${nb(c.poteau)} m de haut projette une ombre de ${nb(c.ombrePoteau)} m. Au même moment, un arbre projette une ombre de ${nb(c.ombreArbre)} m. Quelle est la hauteur de l'arbre ?`,
+      answer:nb(hArbre),
+      explication:`Les rayons du soleil étant parallèles, le poteau et l'arbre forment avec leurs ombres deux triangles où l'on peut appliquer le théorème de Thalès (configuration emboîtée) : hauteur du poteau ÷ ombre du poteau = hauteur de l'arbre ÷ ombre de l'arbre. On en déduit : hauteur de l'arbre = ${nb(c.poteau)} ÷ ${nb(c.ombrePoteau)} × ${nb(c.ombreArbre)} = <strong>${nb(hArbre)} m</strong>.`
+    };
+  }},
+
+  { theme:"Thalès - Réciproque", generate:()=>{
+    const emboiteCas=[
+      {AD:4,AB:6,AE:6,AC:9,par:true},{AD:3,AB:5,AE:6,AC:10,par:true},{AD:6,AB:8,AE:9,AC:12,par:true},
+      {AD:2,AB:6,AE:3,AC:9,par:true},{AD:5,AB:8,AE:10,AC:16,par:true},
+      {AD:4,AB:6,AE:5,AC:9,par:false},{AD:3,AB:5,AE:4,AC:8,par:false},{AD:6,AB:9,AE:4,AC:8,par:false},
+      {AD:2,AB:8,AE:3,AC:9,par:false},{AD:5,AB:10,AE:4,AC:6,par:false},
+    ];
+    const lettresSets=[['A','B','C','D','E'],['M','N','P','K','L'],['S','T','U','R','V']];
+    const [lA,lB,lC,lD,lE]=pick(lettresSets);
+    const cas=pick(emboiteCas);
+    const {AD,AB,AE,AC,par}=cas;
+    const DB=AB-AD, EC=AC-AE;
+    const variants=[
+      `Sur la figure ci-dessous, les points ${lA}, ${lD}, ${lB} sont alignés et les points ${lA}, ${lE}, ${lC} sont alignés, avec ${lA}${lD} = ${AD} cm, ${lA}${lB} = ${AB} cm, ${lA}${lE} = ${AE} cm et ${lA}${lC} = ${AC} cm. Les droites (${lD}${lE}) et (${lB}${lC}) sont-elles parallèles ?`,
+      `On donne ${lA}${lD} = ${AD} cm, ${lA}${lB} = ${AB} cm, ${lA}${lE} = ${AE} cm et ${lA}${lC} = ${AC} cm, avec ${lA},${lD},${lB} alignés et ${lA},${lE},${lC} alignés. Les droites (${lD}${lE}) et (${lB}${lC}) sont-elles parallèles ?`,
+    ];
+    const explication = par
+      ? `On compare les rapports ${frac(lA+lD,lA+lB)} et ${frac(lA+lE,lA+lC)} : ${frac(AD,AB)} et ${frac(AE,AC)} sont égaux (on peut les réduire au même dénominateur ou les simplifier pour le vérifier). Comme ${lA},${lD},${lB} sont alignés et ${lA},${lE},${lC} sont alignés, la réciproque du théorème de Thalès permet de conclure que (${lD}${lE}) et (${lB}${lC}) sont <strong>parallèles</strong>.`
+      : `On compare les rapports ${frac(lA+lD,lA+lB)} et ${frac(lA+lE,lA+lC)} : ${frac(AD,AB)} et ${frac(AE,AC)} ne sont pas égaux. Comme les rapports ne sont pas égaux, d'après la contraposée du théorème de Thalès, les droites (${lD}${lE}) et (${lB}${lC}) <strong>ne sont pas parallèles</strong>.`;
+    return {type:'input', text:pick(variants), answer: par?'Oui':'Non', explication,
+      figure: svgThalesEmboite({AD, DB, AE, EC, lettres:[lA,lB,lC,lD,lE]})};
+  }},
+
+  { theme:"Thalès - Réciproque", generate:()=>{
+    const cfgs=[
+      {AD:3,AB:6,AE:4,AC:8,par:true,ctx:'plan incliné'},{AD:2,AB:5,AE:3,AC:7.5,par:true,ctx:'échafaudage'},
+      {AD:4,AB:7,AE:5,AC:8,par:false,ctx:'toboggan'},{AD:3,AB:9,AE:5,AC:14,par:false,ctx:'rampe'},
+    ];
+    const c=pick(cfgs);
+    return {type:'qcm', text:`Sur un(e) ${c.ctx}, deux barres partent d'un même point A : la première mesure ${c.AD} m jusqu'à un point D puis se prolonge jusqu'à B (AB = ${c.AB} m) ; la seconde mesure ${c.AE} m jusqu'à un point E puis se prolonge jusqu'à C (AC = ${c.AC} m). Les barres (DE) et (BC) sont-elles parallèles ?`,
+      choices:['Oui, les rapports AD/AB et AE/AC sont égaux','Non, les rapports sont différents'], correct: c.par?0:1,
+      explication: c.par ? `On compare ${frac(c.AD,c.AB)} et ${frac(c.AE,c.AC)} : les deux rapports sont égaux, donc, d'après la réciproque du théorème de Thalès, (DE) et (BC) sont <strong>parallèles</strong>.` : `On compare ${frac(c.AD,c.AB)} et ${frac(c.AE,c.AC)} : les deux rapports sont différents, donc, d'après la contraposée du théorème de Thalès, (DE) et (BC) <strong>ne sont pas parallèles</strong>.`};
+  }},
+
+  // ── TRIGONOMÉTRIE (cosinus uniquement — sinus/tangente exclusifs à la 3e) ─
+  { theme:"Trigonométrie", generate:()=>{
+    const angles=[[30,60],[35,55],[40,50],[25,65],[20,70]];
+    const [a,comp]=pick(angles);
+    const lets=pick([['A','B','C'],['M','N','P']]);
+    const [L1,L2,L3]=lets;
+    const variants=[
+      {text:`Dans le triangle ${L1}${L2}${L3} rectangle en ${L2}, ${ang(L3,L1,L2)} = ${a}°. Quelle est la mesure de ${ang(L1,L3,L2)} ?`, answer:`${comp}`, explication:`La somme des trois angles d'un triangle vaut toujours 180°. Le triangle étant rectangle en ${L2}, l'un des angles mesure déjà 90° : ${ang(L1,L3,L2)} = 180° − 90° − ${a}° = <strong>${comp}°</strong>. (Les deux angles aigus d'un triangle rectangle sont donc toujours complémentaires.)`},
+      {text:`Dans un triangle rectangle, un angle aigu mesure ${a}°. Quelle est la mesure de l'autre angle aigu ?`, answer:`${comp}`, explication:`Dans un triangle, la somme des trois angles vaut toujours 180°. Comme le triangle est rectangle, l'un des angles mesure déjà 90°, ce qui ne laisse que 90° à répartir entre les deux angles aigus restants (ils sont dits complémentaires). L'autre angle aigu mesure donc 90° − ${a}° = <strong>${comp}°</strong>.`},
+    ];
+    return {...pick(variants), type:'input'};
+  }},
+
+  { theme:"Trigonométrie", generate:()=>{
+    const lets=pick([['A','B','C'],['M','N','P'],['R','S','T']]);
+    const [L1,L2,L3]=lets;
+    const angleD=pick([L1,L2,L3]);
+    const autres=lets.filter(l=>l!==angleD);
+    const text=`Dans le triangle ${L1}${L2}${L3} rectangle en ${angleD}, cos(${ang(autres[1],autres[0],angleD)}) est égal à :`;
+    const choices=[frac(autres[0]+autres[1],autres[0]+angleD), frac(autres[0]+angleD,autres[0]+autres[1]), frac(angleD+autres[1],autres[0]+autres[1]), frac(autres[0]+angleD,angleD+autres[1])];
+    const explication=`Dans un triangle rectangle, le cosinus d'un angle aigu est égal au rapport entre le côté adjacent à cet angle et l'hypoténuse : cos = côté adjacent ÷ hypoténuse. Ici, le côté adjacent à ${ang(autres[1],autres[0],angleD)} est [${autres[0]}${angleD}] et l'hypoténuse est [${autres[0]}${autres[1]}] (le côté opposé à l'angle droit), donc cos(${ang(autres[1],autres[0],angleD)}) = <strong>${frac(autres[0]+angleD, autres[0]+autres[1])}</strong>.`;
+    return {type:'qcm', text, choices, correct:1, explication};
+  }},
+
+  { theme:"Trigonométrie", generate:()=>{
+    const angleDeg=pick([25,32,41,53,60,67]);
+    const hyp=pick([8,10,12,15,20]);
+    const cosVal=Math.cos(angleDeg*Math.PI/180);
+    const adj=Math.round(hyp*cosVal*10)/10;
+    const lets=pick([['A','B','C'],['M','N','P']]);
+    const [L1,L2,L3]=lets;
+    return {type:'input', text:`Dans le triangle ${L1}${L2}${L3} rectangle en ${L2}, ${ang(L3,L1,L2)} = ${angleDeg}° et l'hypoténuse ${L1}${L3} = ${hyp} cm. Calculez ${L1}${L2} (arrondi au dixième).`, answer:nb(adj),
+      explication:`Le côté [${L1}${L2}] est adjacent à l'angle en ${L1}, et [${L1}${L3}] est l'hypoténuse : cos(${angleDeg}°) = ${L1}${L2} ÷ ${L1}${L3}. On en déduit ${L1}${L2} = ${L1}${L3} × cos(${angleDeg}°) ≈ ${hyp} × ${nb(Math.round(cosVal*1000)/1000)} ≈ <strong>${nb(adj)} cm</strong>.`,
+      figure: svgTrigTriangle([L3,L2,L1], angleDeg, ['', '?', `${hyp} cm`])};
+  }},
+
+  { theme:"Trigonométrie", generate:()=>{
+    const angleDeg=pick([25,32,41,53,60,67]);
+    const adj=pick([6,8,9,12,15]);
+    const cosVal=Math.cos(angleDeg*Math.PI/180);
+    const hyp=Math.round(adj/cosVal*10)/10;
+    const lets=pick([['A','B','C'],['M','N','P']]);
+    const [L1,L2,L3]=lets;
+    return {type:'input', text:`Dans le triangle ${L1}${L2}${L3} rectangle en ${L2}, ${ang(L3,L1,L2)} = ${angleDeg}° et ${L1}${L2} = ${adj} cm. Calculez l'hypoténuse ${L1}${L3} (arrondie au dixième).`, answer:nb(hyp),
+      explication:`Le côté [${L1}${L2}] est adjacent à l'angle en ${L1}, et [${L1}${L3}] est l'hypoténuse : cos(${angleDeg}°) = ${L1}${L2} ÷ ${L1}${L3}. On en déduit ${L1}${L3} = ${L1}${L2} ÷ cos(${angleDeg}°) ≈ ${adj} ÷ ${nb(Math.round(cosVal*1000)/1000)} ≈ <strong>${nb(hyp)} cm</strong>.`,
+      figure: svgTrigTriangle([L3,L2,L1], angleDeg, ['', `${adj} cm`, '?'])};
+  }},
+
+  { theme:"Trigonométrie", generate:()=>{
+    const adj=pick([5,6,7,8,9]);
+    const hyp=pick([10,12,14,15,16]);
+    const angleDeg=Math.round(Math.acos(adj/hyp)*180/Math.PI);
+    const lets=pick([['A','B','C'],['M','N','P']]);
+    const [L1,L2,L3]=lets;
+    return {type:'input', text:`Dans le triangle ${L1}${L2}${L3} rectangle en ${L2}, ${L1}${L2} = ${adj} cm et l'hypoténuse ${L1}${L3} = ${hyp} cm. Calculez la mesure de l'angle ${ang(L3,L1,L2)} (arrondie au degré).`, answer:`${angleDeg}`, acceptedAnswers:[`${angleDeg}`,`${angleDeg}°`],
+      explication:`On calcule d'abord cos(${ang(L3,L1,L2)}) = ${L1}${L2} ÷ ${L1}${L3} = ${adj} ÷ ${hyp} ≈ ${nb(Math.round(adj/hyp*1000)/1000)}. En utilisant la touche cos⁻¹ de la calculatrice, on trouve ${ang(L3,L1,L2)} ≈ <strong>${angleDeg}°</strong>.`,
+      figure: svgTrigTriangle([L3,L2,L1], angleDeg, ['', `${adj} cm`, `${hyp} cm`])};
+  }},
+
+  { theme:"Trigonométrie", generate:()=>{
+    const a=pick([15,20,25,30]); const b=a+pick([20,25,30,35]);
+    const smaller=Math.min(a,b), bigger=Math.max(a,b);
+    return {type:'qcm', text:`Sans calculer, lequel de ces deux angles a le plus grand cosinus : ${a}° ou ${b}° ?`, choices:[`${a}°`,`${b}°`], correct: a<b?0:1,
+      explication:`Pour un angle aigu, plus l'angle est petit, plus son cosinus est grand (le cosinus diminue quand l'angle augmente, de 1 pour 0° à 0 pour 90°). Comme ${smaller}° < ${bigger}°, c'est <strong>${smaller}°</strong> qui a le plus grand cosinus.`};
+  }},
+
+  // ── TRANSLATIONS ────────────────────────────────────
+  { theme:"Translations", generate:()=>{
+    const dx=100, half=50, dy=75;
+    const positions=[]; let n=1;
+    for(let r=0;r<3;r++) for(let c=0;c<3;c++){ positions.push({r,c,label:n}); n++; }
+    const find=(r,c)=>positions.find(p=>p.r===r&&p.c===c);
+    const vectorOptions=[{dr:0,dc:1,desc:'une colonne vers la droite'},{dr:1,dc:0,desc:'une rangée plus haut'},{dr:1,dc:1,desc:'une rangée plus haut et une colonne vers la droite'}];
+    let vec,A,B,X,Y,valid=false,attempts=0;
+    while(!valid && attempts<60){
+      attempts++;
+      vec=pick(vectorOptions);
+      const validAs=positions.filter(p=>find(p.r+vec.dr,p.c+vec.dc));
+      if(validAs.length<2) continue;
+      const chosen=shuffle(validAs).slice(0,2);
+      A=chosen[0]; B=find(A.r+vec.dr,A.c+vec.dc);
+      X=chosen[1]; Y=find(X.r+vec.dr,X.c+vec.dc);
+      if(A&&B&&X&&Y) valid=true;
+    }
+    const distractors=shuffle(positions.filter(p=>p.label!==Y.label)).slice(0,3).map(p=>`n°${p.label}`);
+    const choices=shuffle([`n°${Y.label}`,...distractors]);
+    const correct=choices.indexOf(`n°${Y.label}`);
+    return {type:'qcm', text:`La figure ci-dessous est composée de motifs identiques numérotés de 1 à 9. Quelle est l'image du motif n°${X.label} par la translation qui transforme le motif n°${A.label} en le motif n°${B.label} ?`,
+      choices, correct,
+      explication:`La translation qui transforme le motif n°${A.label} en motif n°${B.label} correspond à un déplacement de ${vec.desc} sur le quadrillage de motifs. En appliquant ce même déplacement au motif n°${X.label}, on obtient le motif <strong>n°${Y.label}</strong>.`,
+      figure: svgMotifTranslation(positions,dx,dy,half)};
+  }},
+
+  { theme:"Translations", generate:()=>{
+    const dx=pick([-4,-3,-2,-1,1,2,3,4]), dy=pick([-4,-3,-2,-1,1,2,3,4]);
+    const Ax=rnd(-3,3), Ay=rnd(-3,3);
+    const Bx=Ax+dx, By=Ay+dy;
+    return {type:'input', text:`Le point A(${Ax} ; ${Ay}) a pour image le point B par une translation de vecteur (${dx} ; ${dy}). Quelles sont les coordonnées de B ?`, answer:`(${Bx} ; ${By})`,
+      acceptedAnswers:[`(${Bx} ; ${By})`,`(${Bx};${By})`,`${Bx} ; ${By}`],
+      explication:`Pour trouver l'image d'un point par une translation de vecteur (${dx} ; ${dy}), on ajoute ${dx} à l'abscisse et ${dy} à l'ordonnée : B(${Ax}+${dx} ; ${Ay}+${dy}) = <strong>(${Bx} ; ${By})</strong>.`};
+  }},
+
+  { theme:"Translations", generate:()=>{
+    const dx=pick([-4,-3,-2,-1,1,2,3,4]), dy=pick([-4,-3,-2,-1,1,2,3,4]);
+    const Ax=rnd(-3,3), Ay=rnd(-3,3);
+    const Bx=Ax+dx, By=Ay+dy;
+    return {type:'input', text:`Le point A(${Ax} ; ${Ay}) a pour image le point B(${Bx} ; ${By}) par une translation. Quel est le vecteur de cette translation ?`, answer:`(${dx} ; ${dy})`,
+      acceptedAnswers:[`(${dx} ; ${dy})`,`(${dx};${dy})`,`${dx} ; ${dy}`],
+      explication:`Le vecteur d'une translation qui transforme A en B s'obtient en calculant B − A coordonnée par coordonnée : abscisse = ${Bx} − (${Ax}) = ${dx} ; ordonnée = ${By} − (${Ay}) = ${dy}. Le vecteur de translation est donc <strong>(${dx} ; ${dy})</strong>.`};
+  }},
+
+  { theme:"Translations", generate:()=>{
+    return {type:'qcm', text:`Une translation transforme un triangle ABC en un triangle A'B'C'. Que peut-on affirmer sur ces deux triangles ?`,
+      choices:["Ils sont égaux : mêmes longueurs et mêmes angles","Ils ont la même aire mais pas les mêmes angles","Seuls les angles sont conservés","Rien n'est conservé"], correct:0,
+      explication:`Une translation conserve les longueurs et les angles : le triangle image A'B'C' est donc <strong>égal</strong> au triangle ABC (même forme, même taille, seulement déplacé).`};
+  }},
+
+  { theme:"Translations", generate:()=>{
+    const dx=pick([-3,-2,-1,1,2,3]), dy=pick([-3,-2,-1,1,2,3]);
+    const Ax=rnd(-2,2), Ay=rnd(-2,2);
+    const Bx=Ax+dx, By=Ay+dy;
+    const decoy1=`(${Ax-dx} ; ${Ay-dy})`, decoy2=`(${Bx} ; ${Ay})`, decoy3=`(${Ax} ; ${By})`;
+    const correct=`(${Bx} ; ${By})`;
+    const choices=shuffle([correct,decoy1,decoy2,decoy3]);
+    const idx=choices.indexOf(correct);
+    return {type:'qcm', text:`Quelle est l'image du point A(${Ax} ; ${Ay}) par la translation de vecteur (${dx} ; ${dy}) ?`, choices, correct:idx,
+      explication:`On ajoute les coordonnées du vecteur à celles du point : (${Ax}+${dx} ; ${Ay}+${dy}) = <strong>${correct}</strong>.`};
+  }},
+
+  { theme:"Translations", generate:()=>{
+    const transforms=[
+      {desc:'une symétrie par rapport à un point', isTrans:false},
+      {desc:"un glissement en ligne droite, sans rotation ni retournement", isTrans:true},
+      {desc:"une rotation d'un quart de tour", isTrans:false},
+      {desc:'un agrandissement de la figure', isTrans:false},
+    ];
+    const t=pick(transforms);
+    return {type:'qcm', text:`La transformation suivante est-elle une translation : « ${t.desc} » ?`, choices:['Oui','Non'], correct: t.isTrans?0:1,
+      explication: t.isTrans ? `Une translation correspond exactement à un déplacement en ligne droite, sans rotation ni changement de taille : c'est bien le cas ici, donc <strong>oui</strong>.` : `Une translation ne fait ni tourner ni grandir/rétrécir la figure. Ici, la transformation décrite (${t.desc}) n'est pas un simple glissement : ce n'est donc <strong>pas une translation</strong>.`};
+  }},
+
+  // ── PROPORTIONNALITÉ, AGRANDISSEMENT & RÉDUCTION ───
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const k=pick([2,3,0.5,1.5,4]);
+    const a1=rnd(2,9); const b1=Math.round(a1*k*10)/10;
+    const a2=rnd(2,9); const b2=Math.round(a2*k*10)/10;
+    return {type:'input', text:`On considère le tableau de proportionnalité suivant :`,
+      figure:`<table><tr><td>${a1}</td><td>${a2}</td></tr><tr><td>${nb(b1)}</td><td>a</td></tr></table><div style="margin-top:8px;font-size:.95rem;color:var(--muted);">Combien vaut a ?</div>`,
+      answer:nb(b2),
+      explication:`Le coefficient de proportionnalité est ${nb(b1)} ÷ ${a1} = ${nb(k)}. On en déduit a = ${a2} × ${nb(k)} = <strong>${nb(b2)}</strong>.`};
+  }},
+
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const k=pick([2,3,4,1.5,2.5]);
+    const l=rnd(3,12);
+    const l2=Math.round(l*k*10)/10;
+    return {type:'input', text:`Une figure est agrandie avec un coefficient ${nb(k)}. Un côté qui mesurait ${l} cm à l'origine, quelle est sa nouvelle longueur ?`, answer:nb(l2),
+      explication:`Lors d'un agrandissement (ou d'une réduction) de coefficient k, toutes les longueurs sont multipliées par k. Ici : ${l} × ${nb(k)} = <strong>${nb(l2)} cm</strong>.`};
+  }},
+
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const k=pick([2,3,4]);
+    const aire=rnd(4,15);
+    const aire2=aire*k*k;
+    return {type:'input', text:`Une figure est agrandie avec un coefficient ${k}. Son aire initiale est de ${aire} cm². Quelle est la nouvelle aire ?`, answer:`${aire2}`,
+      explication:`Lors d'un agrandissement de coefficient k, les aires sont multipliées par k² (et non par k). Ici : ${aire} × ${k}² = ${aire} × ${k*k} = <strong>${aire2} cm²</strong>.`};
+  }},
+
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const k=pick([2,3]);
+    const vol=rnd(2,8);
+    const vol2=vol*k*k*k;
+    return {type:'input', text:`Un solide est agrandi avec un coefficient ${k}. Son volume initial est de ${vol} cm³. Quel est le nouveau volume ?`, answer:`${vol2}`,
+      explication:`Lors d'un agrandissement de coefficient k, les volumes sont multipliés par k³. Ici : ${vol} × ${k}³ = ${vol} × ${k*k*k} = <strong>${vol2} cm³</strong>.`};
+  }},
+
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const echelle=pick([100,200,500,1000,50]);
+    const cm=pick([2,3,4,5,6]);
+    const reelM = cm*echelle/100;
+    return {type:'input', text:`Sur un plan à l'échelle 1/${echelle}, une pièce mesure ${cm} cm. Quelle est sa longueur réelle (en mètres) ?`, answer:nb(reelM),
+      explication:`À l'échelle 1/${echelle}, 1 cm sur le plan représente ${echelle} cm dans la réalité. Ici : ${cm} × ${echelle} = ${cm*echelle} cm, soit <strong>${nb(reelM)} m</strong>.`};
+  }},
+
+  { theme:"Proportionnalité, agrandissement & réduction", generate:()=>{
+    const k=pick([0.5,0.25,2,3,1.5,0.75]);
+    const isReduc = k<1;
+    return {type:'qcm', text:`Une figure subit une transformation de coefficient ${nb(k)}. S'agit-il d'un agrandissement ou d'une réduction ?`, choices:['Agrandissement','Réduction'], correct: isReduc?1:0,
+      explication:`Si le coefficient k est supérieur à 1, la figure est agrandie ; s'il est compris entre 0 et 1, la figure est réduite. Ici k = ${nb(k)}, ${isReduc?"qui est inférieur à 1 : il s'agit donc d'une <strong>réduction</strong>":"qui est supérieur à 1 : il s'agit donc d'un <strong>agrandissement</strong>"}.`};
+  }},
+
+  // ── GRANDEURS, AIRES & VOLUMES ──────────────────────
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const convs=[
+      {q:`Convertissez 3,2 m² en cm².`,ans:'32000',expl:'1 m² = 10 000 cm², donc 3,2 m² = 3,2 × 10 000 = <strong>32 000 cm²</strong>.'},
+      {q:`Convertissez 5 dm² en cm².`,ans:'500',expl:'1 dm² = 100 cm², donc 5 dm² = 5 × 100 = <strong>500 cm²</strong>.'},
+      {q:`Convertissez 4 500 cm² en m².`,ans:'0,45',expl:'1 m² = 10 000 cm², donc 4 500 cm² = 4 500 ÷ 10 000 = <strong>0,45 m²</strong>.'},
+    ];
+    const v=pick(convs);
+    return {type:'input', text:v.q, answer:v.ans, explication:v.expl};
+  }},
+
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const convs=[
+      {q:`Convertissez 3 m³ en litres.`,ans:'3000',expl:'1 m³ = 1 000 L, donc 3 m³ = 3 × 1 000 = <strong>3 000 L</strong>.'},
+      {q:`Convertissez 2 500 cm³ en litres.`,ans:'2,5',expl:'1 L = 1 000 cm³, donc 2 500 cm³ = 2 500 ÷ 1 000 = <strong>2,5 L</strong>.'},
+      {q:`Convertissez 0,8 m³ en dm³.`,ans:'800',expl:'1 m³ = 1 000 dm³, donc 0,8 m³ = 0,8 × 1 000 = <strong>800 dm³</strong>.'},
+    ];
+    const v=pick(convs);
+    return {type:'input', text:v.q, answer:v.ans, explication:v.expl};
+  }},
+
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const dims=[{l:3,L:5,h:4},{l:2,L:6,h:5},{l:4,L:4,h:3},{l:2.5,L:4,h:6},{l:5,L:3,h:8}];
+    const d=pick(dims); const v=Math.round(d.l*d.L*d.h*10)/10;
+    return {type:'input', text:`Calculez le volume d'un pavé droit de dimensions ${nb(d.l)} cm × ${d.L} cm × ${d.h} cm.`, answer:nb(v),
+      explication:`Le volume d'un pavé droit se calcule avec la formule V = longueur × largeur × hauteur. Ici : V = ${nb(d.l)} × ${d.L} × ${d.h} = <strong>${nb(v)} cm³</strong>.`};
+  }},
+
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const bases=[{aire:12,h:5},{aire:8,h:6},{aire:15,h:4},{aire:10,h:7},{aire:20,h:3}];
+    const b=pick(bases); const v=b.aire*b.h;
+    return {type:'input', text:`Un prisme droit a une base d'aire ${b.aire} cm² et une hauteur de ${b.h} cm. Calculez son volume.`, answer:`${v}`,
+      explication:`Le volume d'un prisme droit se calcule avec la formule V = aire de la base × hauteur. Ici : V = ${b.aire} × ${b.h} = <strong>${v} cm³</strong>.`};
+  }},
+
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const cylinders=[{r:2,h:5,v:62.8},{r:3,h:4,v:113.04},{r:4,h:3,v:150.72},{r:5,h:2,v:157}];
+    const c=pick(cylinders);
+    return {type:'input', text:`Calculez le volume d'un cylindre de rayon ${c.r} cm et de hauteur ${c.h} cm. (π ≈ 3,14)`, answer:nb(c.v),
+      explication:`Le volume d'un cylindre se calcule avec la formule V = π × r² × h. Ici : V = 3,14 × ${c.r}² × ${c.h} = 3,14 × ${c.r*c.r} × ${c.h} = <strong>${nb(c.v)} cm³</strong>.`};
+  }},
+
+  { theme:"Grandeurs, aires & volumes", generate:()=>{
+    const d=pick([{h:2,min:120},{h:1.5,min:90},{h:0.5,min:30},{h:2.5,min:150}]);
+    return {type:'input', text:`Convertissez ${nb(d.h)} heure(s) en minutes.`, answer:`${d.min}`,
+      explication:`1 heure vaut 60 minutes, donc pour convertir des heures en minutes on multiplie par 60 : ${nb(d.h)} × 60 = <strong>${d.min} minutes</strong>.`};
+  }},
+
+  // ── STATISTIQUES & PROBABILITÉS ─────────────────────
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const serie=Array.from({length:5},()=>rnd(4,20));
+    const sum=serie.reduce((a,b)=>a+b,0);
+    const moy=Math.round(sum/serie.length*10)/10;
+    return {type:'input', text:`Calculez la moyenne de la série : ${serie.join(' ; ')}.`, answer:nb(moy),
+      explication:`La moyenne s'obtient en divisant la somme des valeurs par leur nombre : (${serie.join(' + ')}) ÷ ${serie.length} = ${sum} ÷ ${serie.length} = <strong>${nb(moy)}</strong>.`};
+  }},
+
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const serie=shuffle(Array.from({length:6},()=>rnd(4,20)));
+    const sorted=[...serie].sort((a,b)=>a-b);
+    const med=Math.round((sorted[2]+sorted[3])/2*10)/10;
+    return {type:'input', text:`Voici une série de 6 valeurs : ${serie.join(' ; ')}. Calculez la médiane.`, answer:nb(med),
+      explication:`On range d'abord les valeurs dans l'ordre croissant : ${sorted.join(', ')}. Comme il y a 6 valeurs (nombre pair), la médiane est la moyenne des deux valeurs du milieu (3ᵉ et 4ᵉ) : (${sorted[2]} + ${sorted[3]}) ÷ 2 = <strong>${nb(med)}</strong>.`};
+  }},
+
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const total=pick([6,8,10,12]);
+    const rouges=rnd(1,total-1);
+    return {type:'input', text:`Un sac contient ${total} boules indiscernables au toucher, dont ${rouges} rouges (les autres sont bleues). On tire une boule au hasard. Quelle est la probabilité de tirer une boule rouge ?`, answer:frac(rouges,total),
+      explication:`La probabilité d'un événement se calcule par : (nombre de cas favorables) ÷ (nombre de cas possibles). Ici, il y a ${rouges} boules rouges sur ${total} boules au total, donc la probabilité est <strong>${frac(rouges,total)}</strong>.`};
+  }},
+
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const faces=6;
+    const events=[
+      {desc:'obtenir un nombre pair', fav:3},
+      {desc:'obtenir un multiple de 3', fav:2},
+      {desc:'obtenir un nombre supérieur ou égal à 4', fav:3},
+      {desc:'obtenir 1 ou 6', fav:2},
+    ];
+    const e=pick(events);
+    return {type:'input', text:`On lance un dé à 6 faces bien équilibré. Quelle est la probabilité d'${e.desc} ?`, answer:frac(e.fav,faces),
+      explication:`Il y a ${faces} résultats possibles, tous également probables. Ici, ${e.fav} d'entre eux permettent d'${e.desc}, donc la probabilité est <strong>${frac(e.fav,faces)}</strong>.`};
+  }},
+
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const total=pick([25,40,50,80,100]);
+    const part=rnd(5,total-5);
+    const freq=Math.round(part/total*1000)/1000;
+    return {type:'input', text:`Dans une classe de ${total} élèves, ${part} pratiquent un sport. Quelle est la fréquence des élèves pratiquant un sport ?`, answer:nb(freq),
+      explication:`La fréquence se calcule par : (effectif du groupe) ÷ (effectif total) = ${part} ÷ ${total} = <strong>${nb(freq)}</strong> (soit ${nb(freq*100)} %).`};
+  }},
+
+  { theme:"Statistiques & probabilités", generate:()=>{
+    const s1=Array.from({length:5},()=>rnd(8,15));
+    const s2=Array.from({length:5},()=>rnd(2,20));
+    const range=arr=>Math.max(...arr)-Math.min(...arr);
+    const r1=range(s1), r2=range(s2);
+    const choices=['Série 1','Série 2'];
+    const correct = r1>r2?0:1;
+    return {type:'qcm', text:`Série 1 : ${s1.join(' ; ')}. Série 2 : ${s2.join(' ; ')}. Laquelle de ces deux séries est la plus dispersée (a la plus grande étendue) ?`, choices, correct,
+      explication:`L'étendue d'une série est la différence entre sa plus grande et sa plus petite valeur. Étendue de la série 1 : ${Math.max(...s1)} − ${Math.min(...s1)} = ${r1}. Étendue de la série 2 : ${Math.max(...s2)} − ${Math.min(...s2)} = ${r2}. La série la plus dispersée est donc la <strong>${correct===0?'série 1':'série 2'}</strong>.`};
+  }},
+
+];
+
 const LEVELS = {
   '3e': { label:'3e', full:'Troisième', available:true, themes:[
     'Tous les thèmes','Nombres & calculs','Fractions','Algèbre & équations',
@@ -3861,7 +4755,12 @@ const LEVELS = {
     "Conversions d'unités",'Statistiques & probabilités','Proportionnalité & fonctions',
     'Algorithmique','Repère & coordonnées'
   ], generators: GEN_3E },
-  '4e': { label:'4e', full:'Quatrième', available:false, themes:[], generators:[] },
+  '4e': { label:'4e', full:'Quatrième', available:true, themes:[
+    'Tous les thèmes','Nombres relatifs','Puissances & notation scientifique','Fractions & nombres rationnels',
+    'Calcul littéral','Arithmétique','Pythagore - Théorème','Pythagore - Réciproque','Triangles égaux',
+    'Thalès - Théorème','Thalès - Réciproque','Trigonométrie','Translations',
+    'Proportionnalité, agrandissement & réduction','Grandeurs, aires & volumes','Statistiques & probabilités',
+  ], generators: GEN_4E },
   '5e': { label:'5e', full:'Cinquième', available:true, themes:[
     'Tous les thèmes','Nombres relatifs','Fractions & nombres rationnels','Calcul & priorités opératoires',
     'Calcul littéral','Proportionnalité','Symétrie centrale','Angles & parallélisme',
@@ -3878,6 +4777,66 @@ const LEVELS = {
 // Sous-thèmes du mode détaillé, par niveau : un libellé par générateur, dans l'ordre où ils apparaissent
 // dans le tableau de générateurs de ce niveau pour ce thème.
 const SUBTHEME_LABELS = {
+  '4e': {
+    'Nombres relatifs': [
+      "Multiplication de deux relatifs", "Division de deux relatifs", "Signe d'un produit de facteurs relatifs",
+      "Priorités : addition et multiplication de relatifs", "Simplifier une écriture (parenthèses, signe +)",
+      "Ranger des relatifs dans l'ordre croissant",
+    ],
+    'Puissances & notation scientifique': [
+      "Puissance de 10 → valeur décimale", "Écrire un nombre en puissance de 10", "Notation scientifique → décimale",
+      "Décimale → notation scientifique", "Produit de deux puissances de même base", "Signe d'une puissance d'un nombre négatif",
+    ],
+    'Fractions & nombres rationnels': [
+      "Addition de fractions (dénominateurs multiples)", "Multiplication de deux fractions", "Inverse d'un nombre ou d'une fraction",
+      "Division de deux fractions", "Priorités : addition et multiplication de fractions", "Fraction d'une fraction (problème)",
+    ],
+    'Calcul littéral': [
+      "Développer par distributivité simple", "Réduire une expression", "Évaluer une expression pour x positif",
+      "Évaluer une expression pour x négatif (piège du carré)", "Tester si une égalité est vraie ou fausse",
+      "Traduire une phrase en expression littérale",
+    ],
+    'Arithmétique': [
+      "Nombre premier ou non", "Décomposition en facteurs premiers", "PGCD de deux nombres",
+      "Critères de divisibilité (QCM)", "Rendre une fraction irréductible", "Problème d'engrenages (PPCM)",
+    ],
+    'Pythagore - Théorème': [
+      "Calculer une longueur (théorème de Pythagore)",
+    ],
+    'Pythagore - Réciproque': [
+      "Reconnaître un triangle rectangle (réciproque)", "Rectangle ou non (réciproque et contraposée)",
+    ],
+    'Triangles égaux': [
+      "Reconnaître deux triangles égaux (codage)", "Identifier un côté homologue", "Identifier un angle homologue",
+      "Cas d'égalité (trois côtés)", "Déduire une longueur ou un angle", "Angles seuls : pas toujours égaux (semblables)",
+    ],
+    'Thalès - Théorème': [
+      "Calculer une longueur (configuration emboîtée)", "Problème d'ombre (poteau et arbre)",
+    ],
+    'Thalès - Réciproque': [
+      "Droites parallèles ou non (réciproque)", "Problème contextualisé (rampe, plan incliné...)",
+    ],
+    'Trigonométrie': [
+      "Angles complémentaires dans un triangle rectangle", "Reconnaître le cosinus (QCM)", "Calculer un côté adjacent (cosinus)",
+      "Calculer l'hypoténuse (cosinus)", "Calculer un angle (cosinus⁻¹)", "Comparer deux cosinus sans calculer",
+    ],
+    'Translations': [
+      "Image d'un motif par translation (grille)", "Coordonnées de l'image d'un point", "Trouver le vecteur de translation",
+      "Propriétés conservées par translation", "Image d'un point (QCM)", "Reconnaître une translation ou non",
+    ],
+    'Proportionnalité, agrandissement & réduction': [
+      "Tableau de proportionnalité à trous", "Effet sur les longueurs (coefficient k)", "Effet sur les aires (coefficient k²)",
+      "Effet sur les volumes (coefficient k³)", "Échelle d'un plan", "Agrandissement ou réduction (k>1 ou k<1)",
+    ],
+    'Grandeurs, aires & volumes': [
+      "Conversions d'aires", "Conversions de volumes/contenances", "Volume d'un pavé droit",
+      "Volume d'un prisme droit", "Volume d'un cylindre", "Convertir des heures en minutes",
+    ],
+    'Statistiques & probabilités': [
+      "Moyenne d'une série", "Médiane d'une série (effectif pair)", "Probabilité (sac de boules)",
+      "Probabilité (lancer de dé)", "Fréquence à partir d'un effectif", "Comparer deux séries (étendue)",
+    ],
+  },
   '3e': {
     'Nombres & calculs': [
       "Fraction d'un nombre (tiers, quart...)", "Carré d'un nombre", "Divisibilité (QCM)", "Pourcentage d'un nombre",
