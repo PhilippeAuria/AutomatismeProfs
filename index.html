@@ -130,19 +130,25 @@ header{width:100%;background:var(--surface);border-bottom:1px solid var(--border
 .tr-fill{stroke:var(--accent2);stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
 .timer-ring.warning .tr-fill{stroke:var(--orange);}
 .timer-ring.danger .tr-fill{stroke:var(--red);}
+.timer-ring.paused .tr-fill{stroke:var(--muted);}
 .timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;}
+.timer-pause-btn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:1.15rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.timer-pause-btn:hover{background:var(--accent2);color:white;border-color:var(--accent2);}
 body.presenting .timer-wrap{padding:14px 22px;margin-bottom:22px;}
 body.presenting .timer-ring{width:116px;height:116px;}
 body.presenting .timer-ring svg{width:116px;height:116px;}
 body.presenting .timer-num{font-size:2.3rem;}
+body.presenting .timer-pause-btn{width:56px;height:56px;font-size:1.5rem;}
 body.compact .timer-wrap{padding:6px 12px;gap:6px;margin-bottom:10px;}
 body.compact .timer-ring{width:60px;height:60px;}
 body.compact .timer-ring svg{width:60px;height:60px;}
 body.compact .timer-ring circle{stroke-width:5;}
 body.compact .timer-num{font-size:1.2rem;}
+body.compact .timer-pause-btn{width:34px;height:34px;font-size:.9rem;}
 body.compact.presenting .timer-wrap{padding:8px 14px;margin-bottom:12px;}
 body.compact.presenting .timer-ring{width:78px;height:78px;}
 body.compact.presenting .timer-ring svg{width:78px;height:78px;}
+body.compact.presenting .timer-pause-btn{width:42px;height:42px;font-size:1.1rem;}
 body.compact.presenting .timer-num{font-size:1.5rem;}
 .progress-bar{height:5px;background:var(--border);border-radius:3px;margin-bottom:30px;overflow:hidden;}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s ease;}
@@ -313,6 +319,7 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
       <svg viewBox="0 0 52 52"><circle class="tr-bg" cx="26" cy="26" r="22"/><circle class="tr-fill" id="tr-fill" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
       <div class="timer-num" id="timer-num">30</div>
     </div>
+    <button class="timer-pause-btn" id="timer-pause-btn" onclick="toggleTimerPause()" title="Mettre le chrono en pause">⏸</button>
   </div>
   <div class="q-header">
     <div class="q-meta">
@@ -4996,7 +5003,7 @@ let numQuestions=5;
 let correctionMode='immediate'; // 'immediate' | 'end'
 let chronoOn=false, chronoSeconds=30;
 let sessionQuestions=[], currentIdx=0, revealedSet=new Set();
-let timerInterval=null, timerRemaining=0;
+let timerInterval=null, timerRemaining=0, timerPaused=false;
 
 // ═══════════════════════════════════════════════════════════
 // INIT - ACCUEIL
@@ -5369,15 +5376,37 @@ function nextQuestion(){
 // ═══════════════════════════════════════════════════════════
 // CHRONO
 // ═══════════════════════════════════════════════════════════
+function timerTick(){
+  timerRemaining--;
+  updateTimerDisplay();
+  if(timerRemaining<=0){ clearInterval(timerInterval); timerInterval=null; nextQuestion(); }
+}
 function startTimer(){
   clearInterval(timerInterval);
   timerRemaining=chronoSeconds;
+  timerPaused=false;
   updateTimerDisplay();
-  timerInterval=setInterval(()=>{
-    timerRemaining--;
-    updateTimerDisplay();
-    if(timerRemaining<=0){ clearInterval(timerInterval); nextQuestion(); }
-  },1000);
+  updatePauseBtn();
+  timerInterval=setInterval(timerTick,1000);
+}
+function toggleTimerPause(){
+  if(!chronoOn) return;
+  if(timerPaused){
+    timerPaused=false;
+    timerInterval=setInterval(timerTick,1000);
+  } else {
+    timerPaused=true;
+    clearInterval(timerInterval);
+    timerInterval=null;
+  }
+  updatePauseBtn();
+}
+function updatePauseBtn(){
+  const btn=document.getElementById('timer-pause-btn');
+  if(!btn) return;
+  btn.textContent=timerPaused?'▶':'⏸';
+  btn.title=timerPaused?'Reprendre le chrono':'Mettre le chrono en pause';
+  document.getElementById('timer-ring').classList.toggle('paused',timerPaused);
 }
 function updateTimerDisplay(){
   document.getElementById('timer-num').textContent=timerRemaining;
