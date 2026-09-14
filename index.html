@@ -1401,7 +1401,7 @@ const GEN_3E = [
     const c=a*x+b;
     const correct=`${x}`;
     const choices=shuffle([correct, `${-x}`, `${Math.round((c+b)/a)}`, `${Math.round((b-c)/a)}`].filter((v,i,arr)=>arr.indexOf(v)===i));
-    while(choices.length<4) choices.push(`${x+choices.length}`);
+    let pad=1; while(choices.length<4){ const cand=`${x+pad}`; if(!choices.includes(cand)) choices.push(cand); pad++; }
     const cIdx=choices.indexOf(correct);
     return {type:'qcm', text:`Parmi les propositions suivantes, laquelle est solution de l'équation ${a}x + ${b} = ${c} ?`, choices:choices.slice(0,4), correct:cIdx,
       explication:`Pour résoudre, on isole le terme en x en soustrayant ${b} aux deux membres, puis on divise par ${a} : ${a}x = ${c} − ${b} = ${c-b}, donc x = ${c-b} ÷ ${a} = <strong>${x}</strong>.`};
@@ -1412,7 +1412,7 @@ const GEN_3E = [
     const res=a*x0-b;
     const correct=`${res}`;
     const choices=shuffle([correct, `${a*x0+b}`, `${a*(x0-b)}`, `${a+x0-b}`].filter((v,i,arr)=>arr.indexOf(v)===i));
-    while(choices.length<4) choices.push(`${res+choices.length}`);
+    let pad=1; while(choices.length<4){ const cand=`${res+pad}`; if(!choices.includes(cand)) choices.push(cand); pad++; }
     const cIdx=choices.indexOf(correct);
     return {type:'qcm', text:`On considère la fonction affine f définie par f(x) = ${a}x − ${b}. Quelle est l'image de ${x0} par f ?`, choices:choices.slice(0,4), correct:cIdx,
       explication:`L'image de ${x0} par f s'obtient en remplaçant x par ${x0} dans l'expression de f : f(${x0}) = ${a}×${x0} − ${b} = ${a*x0} − ${b} = <strong>${res}</strong>.`};
@@ -1853,8 +1853,8 @@ const GEN_3E = [
     ];
     if(Math.random()<0.5){
       const v=pick(situations);
-      const mauvais=[v.res==='1/2'?'1/3':'1/2','1/6',v.res==='1/6'?'1/3':'1/6'];
-      const sh=shuffle([v.res,...mauvais.filter(x=>x!==v.res).slice(0,3)]);
+      const mauvais=shuffle(['1/2','1/3','1/6','2/3'].filter(x=>x!==v.res)).slice(0,3);
+      const sh=shuffle([v.res,...mauvais]);
       const c=sh.indexOf(v.res);
       return {type:'qcm', text:`On lance un ${v.ctx}. Quelle est la probabilité d'obtenir ${v.fav} ?`,
         choices:sh.map(x=>{const parts=x.split('/');return parts.length===2?frac(parts[0],parts[1]):x;}),
