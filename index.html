@@ -122,15 +122,28 @@ header{width:100%;background:var(--surface);border-bottom:1px solid var(--border
 .q-meta{display:flex;align-items:center;gap:12px;}
 .q-counter{font-family:'Syne',sans-serif;font-size:1rem;color:var(--muted);font-weight:700;}
 .q-theme-badge{background:var(--surface2);border:1px solid var(--border);color:var(--accent2);font-size:.78rem;font-weight:600;font-family:'Syne',sans-serif;padding:5px 12px;border-radius:20px;}
-.timer-wrap{display:flex;align-items:center;gap:10px;}
-.timer-ring{position:relative;width:52px;height:52px;}
-.timer-ring svg{transform:rotate(-90deg);width:52px;height:52px;}
-.timer-ring circle{fill:none;stroke-width:5;}
+.timer-wrap{display:flex;justify-content:center;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:10px 16px;margin:0 auto 18px;box-shadow:0 6px 20px rgba(0,0,0,.18);width:max-content;}
+.timer-ring{position:relative;width:88px;height:88px;}
+.timer-ring svg{transform:rotate(-90deg);width:88px;height:88px;}
+.timer-ring circle{fill:none;stroke-width:6;}
 .tr-bg{stroke:var(--border);}
 .tr-fill{stroke:var(--accent2);stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
 .timer-ring.warning .tr-fill{stroke:var(--orange);}
 .timer-ring.danger .tr-fill{stroke:var(--red);}
-.timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Syne',sans-serif;font-weight:800;font-size:.85rem;}
+.timer-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;}
+body.presenting .timer-wrap{padding:14px 22px;margin-bottom:22px;}
+body.presenting .timer-ring{width:116px;height:116px;}
+body.presenting .timer-ring svg{width:116px;height:116px;}
+body.presenting .timer-num{font-size:2.3rem;}
+body.compact .timer-wrap{padding:6px 12px;gap:6px;margin-bottom:10px;}
+body.compact .timer-ring{width:60px;height:60px;}
+body.compact .timer-ring svg{width:60px;height:60px;}
+body.compact .timer-ring circle{stroke-width:5;}
+body.compact .timer-num{font-size:1.2rem;}
+body.compact.presenting .timer-wrap{padding:8px 14px;margin-bottom:12px;}
+body.compact.presenting .timer-ring{width:78px;height:78px;}
+body.compact.presenting .timer-ring svg{width:78px;height:78px;}
+body.compact.presenting .timer-num{font-size:1.5rem;}
 .progress-bar{height:5px;background:var(--border);border-radius:3px;margin-bottom:30px;overflow:hidden;}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s ease;}
 .q-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:44px 46px;margin-bottom:22px;animation:fadeUp .3s ease;min-height:220px;}
@@ -178,7 +191,9 @@ body.presenting .correction-box .ans{font-size:1.9rem;}
 body.presenting .correction-box .expl{font-size:1.55rem;}
 body.presenting .qcm-item{font-size:1.4rem;}
 
-@media(max-width:640px){.q-card{padding:24px 20px;}.q-text{font-size:1.15rem;}.container{padding:20px 14px;}header{padding:0 16px;}}
+@media(max-width:640px){.q-card{padding:24px 20px;}.q-text{font-size:1.15rem;}.container{padding:20px 14px;}header{padding:0 16px;}
+  .timer-ring{width:64px;height:64px;}.timer-ring svg{width:64px;height:64px;}.timer-num{font-size:1.3rem;}
+}
 
 /* Format d'affichage : compact = optimisé pour les écrans/vidéoprojecteurs à faible hauteur (4:3) */
 .format-grid{display:flex;flex-wrap:wrap;gap:10px;}
@@ -287,22 +302,22 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
     <button class="btn btn-primary" id="start-btn" onclick="startSession()">Commencer la séance</button>
   </div>
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted);text-align:center;line-height:1.8;">
-    Conçu par <strong style="color:var(--text)">Philippe Auria</strong> · Collège Fernand Donatien · Fort-de-France
+    Conçu par <strong style="color:var(--text)">Philippe Auria</strong> · Collège Fernand Donatien · Fort-de-France · 2026
   </div>
 </div>
 
 <!-- SESSION / PROJECTION -->
 <div class="screen" id="screen-session">
+  <div class="timer-wrap" id="timer-wrap" style="display:none">
+    <div class="timer-ring" id="timer-ring">
+      <svg viewBox="0 0 52 52"><circle class="tr-bg" cx="26" cy="26" r="22"/><circle class="tr-fill" id="tr-fill" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+      <div class="timer-num" id="timer-num">30</div>
+    </div>
+  </div>
   <div class="q-header">
     <div class="q-meta">
       <span class="q-counter" id="q-counter">Question 1 / 12</span>
       <span class="q-theme-badge" id="q-theme-badge">Thème</span>
-    </div>
-    <div class="timer-wrap" id="timer-wrap" style="display:none">
-      <div class="timer-ring" id="timer-ring">
-        <svg viewBox="0 0 52 52"><circle class="tr-bg" cx="26" cy="26" r="22"/><circle class="tr-fill" id="tr-fill" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
-        <div class="timer-num" id="timer-num">30</div>
-      </div>
     </div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
@@ -335,7 +350,7 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
     <button class="btn btn-secondary" onclick="goHome()">Accueil</button>
   </div>
   <div style="margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);text-align:center;">
-    Conçu par <strong style="color:var(--text)">Philippe Auria</strong> · Collège Fernand Donatien · Fort-de-France
+    Conçu par <strong style="color:var(--text)">Philippe Auria</strong> · Collège Fernand Donatien · Fort-de-France · 2026
   </div>
 </div>
 
