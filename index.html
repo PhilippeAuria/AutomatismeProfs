@@ -46,12 +46,10 @@ header{width:100%;background:var(--surface);border-bottom:1px solid var(--border
 .section-label.sec-niveau{color:var(--accent);}
 .section-label.sec-nombre{color:var(--orange);}
 .section-label.sec-themes{color:var(--accent2);}
-.section-label.sec-correction{color:var(--green);}
 .section-label.sec-chrono{color:var(--red);}
 .config-block{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:4px;}
 .config-block.block-nombre{background:color-mix(in srgb, var(--orange) 14%, var(--card));border-color:color-mix(in srgb, var(--orange) 35%, var(--border));}
 .config-block.block-themes{background:color-mix(in srgb, var(--accent2) 7%, var(--card));border-color:color-mix(in srgb, var(--accent2) 25%, var(--border));}
-.config-block.block-correction{background:color-mix(in srgb, var(--green) 14%, var(--card));border-color:color-mix(in srgb, var(--green) 35%, var(--border));}
 .config-block.block-chrono{background:color-mix(in srgb, var(--red) 14%, var(--card));border-color:color-mix(in srgb, var(--red) 35%, var(--border));}
 .level-grid{display:flex;flex-wrap:wrap;gap:10px;}
 .level-chip{background:color-mix(in srgb, var(--orange) 14%, var(--surface2));border:1.5px solid color-mix(in srgb, var(--orange) 35%, var(--border));border-radius:10px;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;color:var(--text);transition:all .18s;}
@@ -89,14 +87,6 @@ header{width:100%;background:var(--surface);border-bottom:1px solid var(--border
 .num-stepper button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:1.2rem;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;}
 .num-stepper button:hover{border-color:var(--accent2);}
 .num-stepper .num-val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;min-width:52px;text-align:center;}
-.radio-row{display:flex;flex-direction:column;gap:10px;}
-.radio-opt{display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:10px;border:1.5px solid transparent;transition:all .15s;}
-.radio-opt:hover{background:var(--surface2);}
-.radio-opt.selected{border-color:var(--accent2);background:var(--surface2);}
-.radio-opt input{margin-top:3px;accent-color:var(--accent2);}
-.radio-opt .rlabel{font-weight:500;font-size:.9rem;}
-.radio-opt .rdesc{font-size:.78rem;color:var(--muted);font-weight:300;margin-top:2px;}
-.radio-opt.disabled{opacity:.45;pointer-events:none;}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
 .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
 .switch input{opacity:0;width:0;height:0;}
@@ -275,11 +265,6 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
       <label class="switch"><input type="checkbox" id="detail-toggle" onchange="onDetailModeToggle()"><span class="slider-tog"></span></label>
     </div>
     <div class="theme-grid" id="theme-grid"></div>
-  </div>
-
-  <div class="section-label sec-correction">✅ Correction</div>
-  <div class="config-block block-correction">
-    <div class="radio-row" id="correction-radio"></div>
   </div>
 
   <div class="section-label sec-chrono">⏱️ Chronomètre par question</div>
@@ -5169,7 +5154,6 @@ function selectAllSubthemesForLevel(level){
 }
 selectAllSubthemesForLevel(currentLevel);
 let numQuestions=5;
-let correctionMode='immediate'; // 'immediate' | 'end'
 let chronoOn=false, chronoSeconds=30;
 let sessionQuestions=[], currentIdx=0, revealedSet=new Set();
 let timerInterval=null, timerRemaining=0, timerPaused=false;
@@ -5360,26 +5344,9 @@ function changeNum(delta){
   document.getElementById('num-val').textContent=numQuestions;
 }
 
-function initCorrectionRadio(){
-  const box=document.getElementById('correction-radio'); box.innerHTML='';
-  const opts=[
-    {id:'immediate', label:'Après chaque question', desc:'Vous cliquez sur « Corriger » pour révéler la réponse avant de passer à la suivante.'},
-    {id:'end', label:'Uniquement à la fin', desc:'Les questions défilent sans correction affichée ; le bilan complet apparaît à la fin de la série.'},
-  ];
-  opts.forEach(o=>{
-    const div=document.createElement('label');
-    div.className='radio-opt'+(correctionMode===o.id?' selected':'')+(chronoOn && o.id==='immediate'?' disabled':'');
-    div.innerHTML=`<input type="radio" name="corr" ${correctionMode===o.id?'checked':''}><div><div class="rlabel">${o.label}</div><div class="rdesc">${o.desc}</div></div>`;
-    div.querySelector('input').onchange=()=>{ correctionMode=o.id; initCorrectionRadio(); };
-    box.appendChild(div);
-  });
-}
-
 function onChronoToggle(){
   chronoOn=document.getElementById('chrono-toggle').checked;
   document.getElementById('chrono-detail').classList.toggle('hidden',!chronoOn);
-  if(chronoOn) correctionMode='end';
-  initCorrectionRadio();
 }
 function clampChrono(){
   const el=document.getElementById('chrono-seconds');
@@ -5653,7 +5620,6 @@ function toggleTheme(){
 initLevelGrid();
 updateModeLabels();
 initThemeGrid();
-initCorrectionRadio();
 initFormatGrid();
 applyDisplayFormat();
 </script>
