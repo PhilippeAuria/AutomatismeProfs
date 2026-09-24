@@ -47,10 +47,12 @@ header{width:100%;background:var(--surface);border-bottom:1px solid var(--border
 .section-label.sec-nombre{color:var(--orange);}
 .section-label.sec-themes{color:var(--accent2);}
 .section-label.sec-chrono{color:var(--red);}
+.section-label.sec-negatifs{color:var(--pink);}
 .config-block{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:4px;}
 .config-block.block-nombre{background:color-mix(in srgb, var(--orange) 14%, var(--card));border-color:color-mix(in srgb, var(--orange) 35%, var(--border));}
 .config-block.block-themes{background:color-mix(in srgb, var(--accent2) 7%, var(--card));border-color:color-mix(in srgb, var(--accent2) 25%, var(--border));}
 .config-block.block-chrono{background:color-mix(in srgb, var(--red) 14%, var(--card));border-color:color-mix(in srgb, var(--red) 35%, var(--border));}
+.config-block.block-negatifs{background:color-mix(in srgb, var(--pink) 14%, var(--card));border-color:color-mix(in srgb, var(--pink) 35%, var(--border));}
 .level-grid{display:flex;flex-wrap:wrap;gap:10px;}
 .level-chip{background:color-mix(in srgb, var(--orange) 14%, var(--surface2));border:1.5px solid color-mix(in srgb, var(--orange) 35%, var(--border));border-radius:10px;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;color:var(--text);transition:all .18s;}
 .level-chip.active{background:var(--accent2);border-color:var(--accent2);color:white;}
@@ -267,6 +269,19 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
     <div class="theme-grid" id="theme-grid"></div>
   </div>
 
+  <div id="neg-section" hidden>
+    <div class="section-label sec-negatifs">🌡️ Nombres négatifs</div>
+    <div class="config-block block-negatifs">
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:500;font-size:.9rem;">Autoriser les nombres négatifs</div>
+          <div style="font-size:.78rem;color:var(--muted);font-weight:300;margin-top:2px;">À activer une fois le chapitre sur les nombres relatifs terminé. Concerne les priorités opératoires et les calculs avec des décimaux (chapitre « Calcul &amp; priorités opératoires »).</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="neg-toggle" onchange="onNegToggle()"><span class="slider-tog"></span></label>
+      </div>
+    </div>
+  </div>
+
   <div class="section-label sec-chrono">⏱️ Chronomètre par question</div>
   <div class="config-block block-chrono">
     <div class="toggle-row">
@@ -374,6 +389,26 @@ function de_(mot){ return /^[aeiouhâàéèêëîïôöùûAEIOUH]/.test(mot) ? 
 // Exposant en chiffres unicode (ex: sup(-3) -> "⁻³"), pour les puissances de 10.
 function sup(n){ const map={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'}; return String(n).split('').map(c=>map[c]||c).join(''); }
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
+
+// Nombres négatifs : réglage global de la console (case à cocher, niveau 5e). Lu par les générateurs
+// de 5e concernés au moment de générer une question.
+let allowNegatives=false;
+const r2=v=>Math.round(v*100)/100;
+const explSuite=(x,z)=>{ const t=explAdditionRelatifs(x,z); return t.charAt(0).toLowerCase()+t.slice(1); };
+// Écriture d'un décimal relatif dans un calcul : parenthèses s'il est négatif
+const relFmt=x=>x<0?`(${nb(x)})`:nb(x);
+// Explication détaillée de x + z pour des décimaux relatifs, avec la règle utilisée
+// (explSuite : même texte sans majuscule initiale, pour le placer après « Puis » ou « Enfin, »)
+function explAdditionRelatifs(x,z){
+  const ax=Math.abs(x), az=Math.abs(z), res=r2(x+z);
+  const calcul=`${relFmt(x)} + ${relFmt(z)} = <strong>${nb(res)}</strong>`;
+  if(ax===az && (x<0)!==(z<0)) return `Les deux nombres sont opposés (même distance à zéro, signes différents) : leur somme est nulle. Donc ${calcul}.`;
+  if((x<0)===(z<0)){
+    return `Les deux nombres ont le même signe : on additionne leurs distances à zéro, ${nb(ax)} + ${nb(az)} = ${nb(r2(ax+az))}, et on garde le signe ${x<0?'moins':'plus'}. Donc ${calcul}.`;
+  }
+  const grand=ax>az?x:z;
+  return `Les deux nombres ont des signes différents : on soustrait leurs distances à zéro (la plus grande moins la plus petite), ${nb(Math.max(ax,az))} − ${nb(Math.min(ax,az))} = ${nb(r2(Math.abs(ax-az)))}, et on garde le signe du nombre qui a la plus grande distance à zéro, c'est ${nb(grand)}, donc le signe ${grand<0?'moins':'plus'}. Donc ${calcul}.`;
+}
 
 // SVG repère (réutilisé pour lecture de coordonnées / symétrie centrale)
 function svgRepere(points, unite=40, ox=160, oy=160, w=380, h=300) {
@@ -2473,7 +2508,7 @@ const GEN_6E = [
   { theme:"Nombres & calculs", generate:()=>{
     const variants=[
       ()=>{ const a=rnd(2,9), b=rnd(2,9), c=rnd(2,9); const res=a+b*c; return {text:`Calculez ${a} + ${b} × ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis l'addition : ${a} + ${b*c} = <strong>${res}</strong>.`}; },
-      ()=>{ const a=rnd(20,40), b=rnd(2,6), c=rnd(2,6); const res=a-b*c; return {text:`Calculez ${a} − ${b} × ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis la soustraction : ${a} − ${b*c} = <strong>${res}</strong>.`}; },
+      ()=>{ const b=rnd(2,6), c=rnd(2,6), a=rnd(Math.max(20,b*c+1),40); const res=a-b*c; return {text:`Calculez ${a} − ${b} × ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis la soustraction : ${a} − ${b*c} = <strong>${res}</strong>.`}; },
       ()=>{ const a=rnd(2,9), b=rnd(2,9), c=rnd(2,20); const res=a*b+c; return {text:`Calculez ${a} × ${b} + ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${a} × ${b} = ${a*b}. Puis l'addition : ${a*b} + ${c} = <strong>${res}</strong>.`}; },
     ];
     return {...pick(variants)(), type:'input'};
@@ -2510,11 +2545,11 @@ const GEN_6E = [
   }},
 
   { theme:"Nombres & calculs", generate:()=>{
-    const n=rnd(20,80);
+    const isPlus=Math.random()<0.5;
+    const n=isPlus?rnd(20,80):rnd(41,80);
     const k=pick([8,9,18,19,28,29,38,39]);
     const roundK=Math.ceil(k/10)*10;
     const diff=roundK-k;
-    const isPlus=Math.random()<0.5;
     const res=isPlus?n+k:n-k;
     const via=isPlus?n+roundK:n-roundK;
     return {type:'input', text:`Calculez ${n} ${isPlus?'+':'−'} ${k}.`, answer:`${res}`,
@@ -3546,20 +3581,52 @@ const GEN_5E = [
   // ── CALCUL & PRIORITÉS OPÉRATOIRES ──────────────────
   { theme:"Calcul & priorités opératoires", generate:()=>{
     const a=rnd(2,9), b=rnd(2,9), c=rnd(2,9);
-    const variants=[
+    const positifs=[
       ()=>{ const res=a+b*c; return {text:`Calculez ${a} + ${b} × ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis ${a} + ${b*c} = <strong>${res}</strong>.`}; },
-      ()=>{ const res=a*b-c; return {text:`Calculez ${a} × ${b} − ${c}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${a} × ${b} = ${a*b}. Puis ${a*b} − ${c} = <strong>${res}</strong>.`}; },
+      ()=>{ const s=rnd(2,Math.min(9,a*b-1)), res=a*b-s; return {text:`Calculez ${a} × ${b} − ${s}.`, answer:`${res}`, explication:`On effectue d'abord la multiplication : ${a} × ${b} = ${a*b}. Puis ${a*b} − ${s} = <strong>${res}</strong>.`}; },
       ()=>{ const res=(a+b)*c; return {text:`Calculez (${a} + ${b}) × ${c}.`, answer:`${res}`, explication:`Les parenthèses sont prioritaires : ${a} + ${b} = ${a+b}. Puis ${a+b} × ${c} = <strong>${res}</strong>.`}; },
     ];
-    return {...pick(variants)(), type:'input'};
+    // Avec les nombres négatifs : seulement des additions et soustractions de relatifs
+    // (la multiplication de relatifs n'est vue qu'en 4e), donc les produits restent entre nombres positifs.
+    const relatifs=[
+      ()=>{ const s=rnd(1,b*c-1), res=s-b*c;
+        return {text:`Calculez ${s} − ${b} × ${c}.`, answer:nb(res), explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis ${s} − ${b*c} : on retire plus que ce que l'on a, le résultat est négatif. La différence entre ${b*c} et ${s} est ${b*c-s}, donc ${s} − ${b*c} = <strong>${nb(res)}</strong>.`}; },
+      ()=>{ const res=r2(-a+b*c);
+        return {text:`Calculez ${relFmt(-a)} + ${b} × ${c}.`, answer:nb(res), explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis ${explSuite(-a,b*c)}`}; },
+      ()=>{ const res=-a-b*c;
+        return {text:`Calculez ${relFmt(-a)} − ${b} × ${c}.`, answer:nb(res), explication:`On effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis soustraire ${b*c} revient à ajouter son opposé : ${relFmt(-a)} − ${b*c} = ${relFmt(-a)} + ${relFmt(-b*c)}. ${explAdditionRelatifs(-a,-b*c)}`}; },
+      ()=>{ const s=rnd(1,b*c-1), inner=s-b*c, d=rnd(2,9), res=inner+d;
+        return {text:`Calculez (${s} − ${b} × ${c}) + ${d}.`, answer:nb(res), explication:`Les parenthèses sont prioritaires. Dans les parenthèses, on effectue d'abord la multiplication : ${b} × ${c} = ${b*c}. Puis ${s} − ${b*c} = ${nb(inner)} (on retire plus que ce que l'on a, le résultat est négatif). Enfin, ${explSuite(inner,d)}`}; },
+    ];
+    return {...pick(allowNegatives?[...positifs,...relatifs]:positifs)(), type:'input'};
   }},
 
   { theme:"Calcul & priorités opératoires", generate:()=>{
-    const a=pick([2.7,3.4,5.6,8.15,4.25,6.75,1.35]); const b=pick([1.4,0.8,2.35,1.75,0.65]);
-    const isPlus=Math.random()<0.5;
-    const res=Math.round((isPlus?a+b:a-b)*100)/100;
-    return {type:'input', text:`Calculez ${nb(a)} ${isPlus?'+':'−'} ${nb(b)}.`, answer:nb(res),
-      explication:`${nb(a)} ${isPlus?'+':'−'} ${nb(b)} = <strong>${nb(res)}</strong>.`};
+    let a=pick([2.7,3.4,5.6,8.15,4.25,6.75,1.35]), b=pick([1.4,0.8,2.35,1.75,0.65]);
+    if(!allowNegatives){
+      // Nombres positifs seulement : dans une soustraction, le plus grand nombre est placé en premier
+      const isPlus=Math.random()<0.5;
+      if(!isPlus && a<b) [a,b]=[b,a];
+      const res=r2(isPlus?a+b:a-b);
+      return {type:'input', text:`Calculez ${nb(a)} ${isPlus?'+':'−'} ${nb(b)}.`, answer:nb(res),
+        explication:`${nb(a)} ${isPlus?'+':'−'} ${nb(b)} = <strong>${nb(res)}</strong>.`};
+    }
+    // Avec les nombres négatifs : additions et soustractions de décimaux relatifs
+    const variantes=[
+      ()=>({x:Math.min(a,b), op:'−', y:Math.max(a,b)}),
+      ()=>({x:-a, op:'+', y:b}),
+      ()=>({x:a, op:'+', y:-b}),
+      ()=>({x:-a, op:'−', y:b}),
+      ()=>({x:a, op:'−', y:-b}),
+      ()=>({x:-a, op:'−', y:-b}),
+    ];
+    const {x,op,y}=pick(variantes)();
+    const z=op==='−'?-y:y;
+    const res=r2(x+z);
+    let explication='';
+    if(op==='−') explication+=`Soustraire un nombre revient à ajouter son opposé : ${relFmt(x)} − ${relFmt(y)} = ${relFmt(x)} + ${relFmt(z)}. `;
+    explication+=explAdditionRelatifs(x,z);
+    return {type:'input', text:`Calculez ${relFmt(x)} ${op} ${relFmt(y)}.`, answer:nb(res), explication};
   }},
 
   { theme:"Calcul & priorités opératoires", generate:()=>{
@@ -5177,7 +5244,7 @@ function selectLevel(key){
   currentLevel=key;
   selectedThemes=new Set(LEVELS[key].themes.filter(t=>t!=='Tous les thèmes'));
   selectAllSubthemesForLevel(key);
-  initLevelGrid(); initThemeGrid();
+  initLevelGrid(); initThemeGrid(); updateNegSection();
 }
 
 function isEverythingSelected(){
@@ -5342,6 +5409,14 @@ function renderThemeDropdown(theme, colorClass){
 function changeNum(delta){
   numQuestions=Math.max(1,Math.min(40,numQuestions+delta));
   document.getElementById('num-val').textContent=numQuestions;
+}
+
+// La case « Nombres négatifs » n'existe qu'en 5e (les autres niveaux ne sont pas concernés).
+function updateNegSection(){
+  document.getElementById('neg-section').hidden=currentLevel!=='5e';
+}
+function onNegToggle(){
+  allowNegatives=document.getElementById('neg-toggle').checked;
 }
 
 function onChronoToggle(){
@@ -5620,6 +5695,7 @@ function toggleTheme(){
 initLevelGrid();
 updateModeLabels();
 initThemeGrid();
+updateNegSection();
 initFormatGrid();
 applyDisplayFormat();
 </script>
