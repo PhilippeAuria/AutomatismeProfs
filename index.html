@@ -787,7 +787,7 @@ function svgTrianglesEgaux(labels1, labels2, tickPattern){
 }
 
 function svgScratch(blocs) {
-  let y=0; let svg='';
+  let y=0; let svg=''; const departs=[];
   const W=260, xi=44, xi2=64, enc=8, ex=72, ex2=92;
   blocs.forEach((b)=>{
     if(b.type==='event'){
@@ -805,9 +805,10 @@ function svgScratch(blocs) {
       svg+=`<rect x="${xi+82}" y="${y+9}" width="24" height="16" rx="8" fill="white" stroke="#CF6E17" stroke-width="1"/>`;
       svg+=`<text x="${xi+94}" y="${y+21}" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#7A4400" font-weight="700">${b.val}</text>`;
       svg+=`<text x="${xi+112}" y="${y+22}" font-size="11" font-family="sans-serif" fill="white" font-weight="600">fois</text>`;
-      y+=34; b._startY=y;
+      y+=34; departs.push(y);
     } else if(b.type==='repeat_end'){
-      svg+=`<rect x="${xi}" y="${b._startY}" width="20" height="${y-b._startY}" fill="#E6821E" stroke="#CF6E17" stroke-width="1"/>`;
+      const yDepart=departs.length?departs.pop():y;
+      svg+=`<rect x="${xi}" y="${yDepart}" width="20" height="${y-yDepart}" fill="#E6821E" stroke="#CF6E17" stroke-width="1"/>`;
       svg+=`<path d="M${xi},${y} L${xi2},${y} L${W},${y} L${W},${y+24} L${ex2},${y+24} L${ex2},${y+24+enc} Q${(ex+ex2)/2},${y+24+enc+4} ${ex},${y+24+enc} L${ex},${y+24} L${xi},${y+24} Z" fill="#E6821E" stroke="#CF6E17" stroke-width="1"/>`;
       y+=24;
     } else if(b.type==='move'){
@@ -3416,7 +3417,7 @@ const GEN_6E = [
     const choices=shuffle([v.n,...wrongPool]);
     const correct=choices.indexOf(v.n);
     return {type:'qcm', text:`Combien d'axes de symétrie possède ${v.name} ?`, choices, correct,
-      explication:`${v.name.charAt(0).toUpperCase()+v.name.slice(1)} possède <strong>${v.n}</strong> axe${v.n==='1'?'':'s'} de symétrie.`};
+      explication:`${v.name.charAt(0).toUpperCase()+v.name.slice(1)} possède ${v.n==='une infinité'?`<strong>une infinité</strong> d'axes`:`<strong>${v.n}</strong> axe${(v.n==='0'||v.n==='1')?'':'s'}`} de symétrie.`};
   }},
 
   { theme:"Symétrie axiale", generate:()=>{
@@ -3578,7 +3579,7 @@ const GEN_6E = [
     const choices=cats.map(c=>c.label);
     const correct=choices.indexOf(target.label);
     return {type:'qcm', text:question, choices, correct,
-      explication:`${isMax?'La plus grande barre est celle de':'La plus petite barre est celle de'} ${target.label}, avec ${target.val} ${ctx.unit}.`,
+      explication:`${isMax?'La plus grande barre est celle de':'La plus petite barre est celle de'} ${target.label}, avec ${target.val} ${target.val===1?ctx.unit.replace(/s$/,''):ctx.unit}.`,
       figure:svgBarChart(cats,10,2)};
   }},
 
@@ -3915,8 +3916,8 @@ const GEN_6E = [
     const say=pick([2,3,4]);
     const wait=pick([1,2,3]);
     const total=say+wait;
-    return {type:'input', text:`Un programme dit « Bonjour » pendant ${say} secondes, puis attend ${wait} secondes avant le bloc suivant. Combien de temps s'écoule au total avant l'exécution du bloc suivant ?`,
-      answer:`${total}`, explication:`Les deux durées s'additionnent l'une après l'autre : ${say} + ${wait} = <strong>${total} secondes</strong>.`,
+    return {type:'input', text:`Un programme dit « Bonjour » pendant ${say} ${say>1?'secondes':'seconde'}, puis attend ${wait} ${wait>1?'secondes':'seconde'} avant le bloc suivant. Combien de temps s'écoule au total avant l'exécution du bloc suivant ?`,
+      answer:`${total}`, explication:`Les deux durées s'additionnent l'une après l'autre : ${say} + ${wait} = <strong>${total} ${total>1?'secondes':'seconde'}</strong>.`,
       figure:svgScratch([{type:'say',val:'Bonjour'},{type:'wait',val:wait}])};
   }},
 
@@ -5473,8 +5474,8 @@ const GEN_4E = [
   { theme:"Statistiques & probabilités", generate:()=>{
     const total=pick([6,8,10,12]);
     const rouges=rnd(1,total-1);
-    return {type:'input', text:`Un sac contient ${total} boules indiscernables au toucher, dont ${rouges} rouges (les autres sont bleues). On tire une boule au hasard. Quelle est la probabilité de tirer une boule rouge ?`, answer:frac(rouges,total),
-      explication:`La probabilité d'un événement se calcule par : (nombre de cas favorables) ÷ (nombre de cas possibles). Ici, il y a ${rouges} boules rouges sur ${total} boules au total, donc la probabilité est <strong>${frac(rouges,total)}</strong>.`};
+    return {type:'input', text:`Un sac contient ${total} boules indiscernables au toucher, dont ${rouges} rouge${rouges>1?'s':''} (${total-rouges>1?'les autres sont bleues':"l'autre est bleue"}). On tire une boule au hasard. Quelle est la probabilité de tirer une boule rouge ?`, answer:frac(rouges,total),
+      explication:`La probabilité d'un événement se calcule par : (nombre de cas favorables) ÷ (nombre de cas possibles). Ici, il y a ${rouges} boule${rouges>1?'s':''} rouge${rouges>1?'s':''} sur ${total} boules au total, donc la probabilité est <strong>${frac(rouges,total)}</strong>.`};
   }},
 
   { theme:"Statistiques & probabilités", generate:()=>{
