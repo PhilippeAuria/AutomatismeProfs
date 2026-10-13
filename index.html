@@ -260,6 +260,16 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
     </div>
   </div>
 
+  <div id="tables-section" hidden>
+    <div class="section-label sec-themes">✖️ Tables de multiplication à travailler</div>
+    <div class="config-block block-themes">
+      <div class="theme-grid" id="tables-all-grid" style="margin-bottom:12px;"></div>
+      <div class="theme-grid" id="tables-grid"></div>
+      <div class="note-inline">Cochez une ou plusieurs tables. Les multiplications vont jusqu'à 15 × 15, sans jamais se répéter dans une série.</div>
+    </div>
+  </div>
+
+  <div id="themes-section">
   <div class="section-label sec-themes">🎯 Thèmes abordés</div>
   <div class="config-block block-themes">
     <div class="toggle-row" style="margin-bottom:16px;">
@@ -271,6 +281,7 @@ body:not(.presenting):not(.compact) .q-figure svg{max-width:min(440px,100%) !imp
       <label class="switch"><input type="checkbox" id="detail-toggle" onchange="onDetailModeToggle()"><span class="slider-tog"></span></label>
     </div>
     <div class="theme-grid" id="theme-grid"></div>
+  </div>
   </div>
 
   <div id="neg-section" hidden>
@@ -5752,6 +5763,11 @@ function selectAllSubthemesForLevel(level){
   });
 }
 selectAllSubthemesForLevel(currentLevel);
+// Mode « Tables de multiplication » : tuile à part dans le choix du niveau
+const TABLES_MAX=15;
+const TABLES_THEME='Tables de multiplication';
+let tablesMode=false;
+let selectedTables=new Set(Array.from({length:TABLES_MAX},(_,i)=>i+1));
 let numQuestions=5;
 let chronoOn=false, chronoSeconds=30;
 let sessionQuestions=[], currentIdx=0, revealedSet=new Set();
@@ -5765,18 +5781,77 @@ function initLevelGrid(){
   Object.keys(LEVELS).forEach(key=>{
     const lv=LEVELS[key];
     const chip=document.createElement('div');
-    chip.className='level-chip'+(key===currentLevel?' active':'')+(lv.available?'':' disabled');
+    chip.className='level-chip'+(!tablesMode&&key===currentLevel?' active':'')+(lv.available?'':' disabled');
     chip.innerHTML=`${lv.label}${lv.available?'':'<span class="soon">bientôt disponible</span>'}`;
     if(lv.available){ chip.onclick=()=>selectLevel(key); }
     grid.appendChild(chip);
   });
+  const tables=document.createElement('div');
+  tables.className='level-chip'+(tablesMode?' active':'');
+  tables.textContent='Tables ×';
+  tables.onclick=selectTables;
+  grid.appendChild(tables);
 }
 function selectLevel(key){
   if(!LEVELS[key].available) return;
+  tablesMode=false;
   currentLevel=key;
   selectedThemes=new Set(LEVELS[key].themes.filter(t=>t!=='Tous les thèmes'));
   selectAllSubthemesForLevel(key);
-  initLevelGrid(); initThemeGrid(); updateNegSection();
+  initLevelGrid(); initThemeGrid(); updateModeSections();
+}
+function selectTables(){
+  tablesMode=true;
+  initLevelGrid(); initTablesGrid(); updateModeSections();
+}
+
+function initTablesGrid(){
+  const allGrid=document.getElementById('tables-all-grid'); allGrid.innerHTML='';
+  const allBtn=document.createElement('div');
+  allBtn.className='theme-chip all-chip'+(selectedTables.size===TABLES_MAX?' active':'');
+  allBtn.textContent='Toutes les tables';
+  allBtn.onclick=()=>{
+    selectedTables=selectedTables.size===TABLES_MAX?new Set():new Set(Array.from({length:TABLES_MAX},(_,i)=>i+1));
+    initTablesGrid();
+  };
+  allGrid.appendChild(allBtn);
+  const grid=document.getElementById('tables-grid'); grid.innerHTML='';
+  for(let t=1;t<=TABLES_MAX;t++){
+    const chip=document.createElement('div');
+    chip.className='theme-chip'+(selectedTables.has(t)?' active':'');
+    chip.textContent=`Table de ${t}`;
+    chip.onclick=()=>{
+      if(selectedTables.has(t)) selectedTables.delete(t); else selectedTables.add(t);
+      initTablesGrid();
+    };
+    grid.appendChild(chip);
+  }
+}
+
+// Multiplications des tables cochées, sans doublon (7 × 8 et 8 × 7 comptent pour une seule)
+function tablesFacts(){
+  const seen=new Set(), facts=[];
+  selectedTables.forEach(t=>{
+    for(let b=1;b<=TABLES_MAX;b++){
+      const key=Math.min(t,b)+'x'+Math.max(t,b);
+      if(seen.has(key)) continue;
+      seen.add(key);
+      facts.push(Math.random()<0.5?[t,b]:[b,t]);
+    }
+  });
+  return facts;
+}
+function buildTablesSession(){
+  if(selectedTables.size===0){ alert('Veuillez cocher au moins une table.'); return null; }
+  const facts=shuffle(tablesFacts());
+  if(numQuestions>facts.length){
+    alert(`Avec ces tables, il n'y a que ${facts.length} multiplication${facts.length>1?'s':''} différente${facts.length>1?'s':''} : la série est limitée à ${facts.length} question${facts.length>1?'s':''}.`);
+  }
+  return facts.slice(0,numQuestions).map(([a,b])=>({
+    type:'input', theme:TABLES_THEME,
+    text:`${a} × ${b} = ?`, answer:String(a*b),
+    explication:`${a} × ${b} = <strong>${a*b}</strong>`,
+  }));
 }
 
 function isEverythingSelected(){
@@ -5945,7 +6020,13 @@ function changeNum(delta){
 
 // La case « Nombres négatifs » n'existe qu'en 5e (les autres niveaux ne sont pas concernés).
 function updateNegSection(){
-  document.getElementById('neg-section').hidden=currentLevel!=='5e';
+  document.getElementById('neg-section').hidden=tablesMode||currentLevel!=='5e';
+}
+// Le mode Tables remplace le choix des thèmes par le choix des tables
+function updateModeSections(){
+  document.getElementById('themes-section').hidden=tablesMode;
+  document.getElementById('tables-section').hidden=!tablesMode;
+  updateNegSection();
 }
 function onNegToggle(){
   allowNegatives=document.getElementById('neg-toggle').checked;
@@ -6016,6 +6097,7 @@ function questionDedupeKey(gen,q){
   return gen.theme+'|'+q.text+(q.choices?('|'+q.choices.join('|')):'');
 }
 function buildSession(){
+  if(tablesMode) return buildTablesSession();
   const allGens=LEVELS[currentLevel].generators;
   const labelsForLevel=SUBTHEME_LABELS[currentLevel]||{};
   const pool=allGens.filter((g,i)=>{
@@ -6172,7 +6254,7 @@ function endSessionEarly(){
 }
 function finishSession(){
   clearInterval(timerInterval);
-  document.getElementById('bilan-sub').textContent=`${sessionQuestions.length} question${sessionQuestions.length>1?'s':''} abordée${sessionQuestions.length>1?'s':''} · ${LEVELS[currentLevel].full}`;
+  document.getElementById('bilan-sub').textContent=`${sessionQuestions.length} question${sessionQuestions.length>1?'s':''} abordée${sessionQuestions.length>1?'s':''} · ${tablesMode?TABLES_THEME:LEVELS[currentLevel].full}`;
   const list=document.getElementById('bilan-list'); list.innerHTML='';
   sessionQuestions.forEach(q=>{
     const answerText=q.type==='qcm'?q.choices[q.correct]:q.answer;
@@ -6227,7 +6309,8 @@ function toggleTheme(){
 initLevelGrid();
 updateModeLabels();
 initThemeGrid();
-updateNegSection();
+initTablesGrid();
+updateModeSections();
 initFormatGrid();
 applyDisplayFormat();
 </script>
