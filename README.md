@@ -1,29 +1,82 @@
-# Automatisme_Profs
+# Automatismes Profs · Projeter des questions d'automatismes en classe
 
-Console professeur pour l'entraînement aux automatismes du Brevet des collèges (DNB), niveaux 4ème et 3ème.
+Console du professeur : choisissez le niveau (6e à 3e) ou les tables de multiplication, et projetez au tableau des questions d'automatismes avec correction. Sans compte, rien ne quitte l'appareil.
 
-## Description
+🔗 **Utiliser en ligne :** https://auriaphilippe.forge.apps.education.fr/Automatisme_Profs/
+📄 Licence [GNU GPL v3](LICENSE) · 📜 [Nouveautés](CHANGELOG.md) · 🛡️ [Sécurité](SECURITY.md) · ♿ [Accessibilité](accessibilite.html)
 
-Application web autonome (un seul fichier HTML, sans installation ni serveur) destinée à être projetée en classe ou utilisée en vidéoprojection. Elle génère aléatoirement des questions d'automatismes (calcul mental, algèbre, géométrie, proportionnalité, etc.) couvrant l'ensemble des thèmes du programme de mathématiques de cycle 4, avec correction et figures géométriques intégrées.
+## Pour quoi faire ?
+
+Proposer en début de séance des questions d'automatismes (calcul mental, figures, tableaux, graphiques) à projeter au tableau, avec correction, chronomètre et bilan de fin de séance, du niveau 6e au niveau 3e. Un mode « Tables » entraîne les multiplications de 1 à 15.
+
+## Pour qui ?
+
+Les professeurs de mathématiques de collège (classe entière, vidéoprojecteur ou TNI).
+
+## Comment l'utiliser
+
+1. Ouvrez la page en ligne (rien à installer, pas de compte).
+2. Choisissez le niveau (ou « Tables ×»), le nombre de questions, les thèmes et, si vous le souhaitez, un compte à rebours par question.
+3. Cliquez sur « Commencer la séance » : les questions défilent, « Corriger » affiche la réponse, « Suivant » passe à la suite.
+4. À la fin, le bilan reprend toutes les questions avec leur correction.
+
+Pour l'utiliser hors ligne, téléchargez le dépôt et ouvrez `index.html` dans un navigateur : aucune dépendance, aucune connexion nécessaire.
 
 ## Fonctionnalités
 
-- Génération procédurale de questions (pas de banque figée : les valeurs numériques changent à chaque tirage).
-- Niveaux 4ème et 3ème, plusieurs thèmes par niveau (15 thèmes en 4ème, autant en 3ème).
-- Chronomètre avec fonction pause/reprise pour laisser le temps aux élèves qui n'ont pas terminé.
-- Figures géométriques générées en SVG (triangles, cercles, solides, repères...).
-- Affichage adapté à la vidéoprojection (texte et figures agrandis).
+- Niveaux 6e, 5e, 4e et 3e, avec choix des thèmes et sous-thèmes.
+- Mode « Tables de multiplication » de 1 à 15.
+- Questions générées au hasard à chaque séance, sans doublon.
+- Figures, tableaux et graphiques générés en SVG.
+- Compte à rebours avec pause, plein écran, formats 16:9 et 4:3.
 
-## Utilisation
+## Données et vie privée
 
-Ouvrir simplement `index.html` dans un navigateur, aucune dépendance ni connexion internet requise après téléchargement.
+Aucun compte, aucun cookie, aucune mesure d'audience, aucun serveur. Le navigateur garde uniquement le thème clair ou sombre et le format d'affichage (clés `autodnb-profs-theme` et `autodnb-profs-format`) sur l'appareil. Rien n'est envoyé sur le réseau. Aucune donnée personnelle d'élève n'est traitée. Pour tout effacer, supprimer les données du site dans le navigateur.
 
-Version en ligne : https://auriaphilippe.forge.apps.education.fr/Automatisme_Profs
+## Accessibilité
+
+**Accessibilité : non conforme** (aucun audit réalisé). Les contenus connus comme non accessibles sont listés dans la [déclaration d'accessibilité](accessibilite.html), avec les pistes d'amélioration.
+
+## Sécurité
+
+Aucune bibliothèque ni police chargée depuis un site tiers, aucune requête réseau, pas d'`eval`. Le détail, les limites de GitLab Pages et la façon de signaler une faille sont dans [SECURITY.md](SECURITY.md).
+
+## Conception et IA
+
+Le code a été écrit avec l'aide de Claude (Anthropic), puis relu, testé et maintenu par Philippe Auria. L'application n'appelle aucune intelligence artificielle et n'envoie aucune donnée. Les questions et corrections sont produites par des règles écrites à la main, mais doivent rester relues par l'enseignant.
+
+## Lancer en local / publier
+
+- En local : ouvrir `index.html` dans un navigateur.
+- Publication : GitLab Pages, via `.gitlab-ci.yml`, à chaque envoi sur la branche `main`. Aucune étape de construction.
+
+## Architecture
+
+```text
+index.html             L'application (un seul fichier)
+mentions-legales.html  Mentions légales
+accessibilite.html     Déclaration d'accessibilité
+assets/favicon.svg     Icône
+assets/fonts/          Polices Syne et DM Sans (.woff2) et leur licence OFL
+LICENSE                Licence GNU GPL v3
+SECURITY.md            Sécurité
+CHANGELOG.md           Historique des versions
+.gitlab-ci.yml         Publication GitLab Pages
+```
+
+## Contribuer
+
+- Signaler une erreur ou proposer une idée : [ouvrir un ticket](https://forge.apps.education.fr/auriaphilippe/Automatisme_Profs/-/issues).
+- Proposer une modification : fourche du dépôt, puis demande de fusion.
+- Règles : le français est la langue du projet (interface, commentaires, messages de commit) ; aucune dépendance externe ; tester l'application avant de proposer une modification.
+
+## Crédits
+
+- Les générateurs de questions sont écrits par l'auteur ; ils s'inspirent des programmes officiels, des ressources Éduscol « Les automatismes au collège » et des sujets du DNB publiés par le ministère.
+- Polices **Syne** (© The Syne Project Authors) et **DM Sans** (© The DM Sans Project Authors), licence SIL Open Font License 1.1, voir `assets/fonts/`.
+- Conçu par Philippe Auria, Collège Fernand Donatien, Fort-de-France.
 
 ## Licence
 
-Ce projet est distribué sous licence **GNU GPL v3**. Voir le fichier [LICENSE](LICENSE).
-
-## Auteur
-
-Philippe Auria, Collège Fernand Donatien, Fort-de-France.
+Logiciel libre sous licence [GNU GPL v3](LICENSE).
